@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Resume Analysis Report</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="result-container">
+
+
+<header class="result-header">
+
+    <div class="result-topbar">
+        <a href="/" class="back-link">← Dashboard</a>
+
+        <button type="button" id="themeToggle" class="theme-toggle">
+            🌙 Dark Mode
+        </button>
+    </div>
+
+    <span class="tag">✦ AI RESUME ANALYZER</span>
+
+    <h1>Your Resume Analysis</h1>
+
+    <p>Here is your personalized resume report.</p>
+
+</header>
+
+
+
+    <!-- Resume Score -->
+    <section class="result-card score-card">
+
+        <h2>Overall Resume Score</h2>
+
+        <div class="score-circle"
+             style="--score: {{ resume_score }}%">
+
+            <div class="score-inner">
+                <strong>{{ resume_score }}</strong>
+                <span>/ 100</span>
+            </div>
+
+        </div>
+
+        <h3>
+            {% if resume_score >= 80 %}
+                Excellent Resume!
+            {% elif resume_score >= 60 %}
+                Good Progress!
+            {% elif resume_score >= 40 %}
+                Needs Improvement
+            {% else %}
+                Keep Improving!
+            {% endif %}
+        </h3>
+
+        <p>Your score is based on the resume sections checked below.</p>
+
+    </section>
+    
+
+<!-- Score Breakdown -->
+<section class="result-card">
+
+    <h2>Score Breakdown</h2>
+
+    {% set score_limits = {
+        'Contact Information': 10,
+        'Professional Summary': 10,
+        'Technical Skills': 20,
+        'Education': 15,
+        'Experience': 15,
+        'Projects': 20,
+        'Readability': 10
+    } %}
+
+    {% for category, marks in score_breakdown.items() %}
+
+    <div class="score-row">
+
+        <div class="score-label">
+            <span>{{ category }}</span>
+            <strong>{{ marks }} / {{ score_limits[category] }}</strong>
+        </div>
+
+        <div class="progress-track">
+            <div class="progress-fill"
+                 data-width="{{ (marks / score_limits[category] * 100)|round(1) }}">
+            </div>
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</section>
+
+
+
+
+
+    <!-- Detected Skills -->
+    <section class="result-card">
+
+        <h2>Skills Detected</h2>
+
+        <p>{{ skill_count }} matching skills found in your resume.</p>
+
+        <div class="skill-list">
+
+            {% for skill in found_skills %}
+                <span class="skill-tag">{{ skill }}</span>
+            {% else %}
+                <p>No matching skills detected.</p>
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+
+    <!-- Suggestions -->
+    <section class="result-card">
+
+        <h2>Improvement Suggestions</h2>
+
+        {% for suggestion in suggestions %}
+
+            <div class="suggestion">
+                ✦ {{ suggestion }}
+            </div>
+
+        {% endfor %}
+
+    </section>
+
+
+    <!-- Original Text -->
+    <section class="result-card">
+
+        <h2>Extracted Resume Text</h2>
+
+        <details>
+            <summary>View original PDF text</summary>
+            <pre>{{ resume_text }}</pre>
+        </details>
+
+    </section>
+
+
+    <div class="result-footer">
+        <a href="/" class="hero-btn">Analyze Another Resume →</a>
+    </div>
+
+</div>
+    <!-- Progress Bar JavaScript -->
+     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        document.querySelectorAll('.progress-fill').forEach(bar => {
+            bar.style.width = bar.dataset.width + '%';
+        });
+    </script>
+</body>
+</html>
+
+
+
