@@ -1,0 +1,202 @@
+import unittest
+
+from analyzer.job_matcher import (
+    extract_job_skills,
+    match_resume_to_job,
+    JOB_SKILLS,
+    SKILL_ALIASES,
+)
+
+
+class TestJobMatcher(unittest.TestCase):
+
+    def test_normal_job_description_keyword_extraction(self):
+        jd = """
+        We are seeking a Backend Developer.
+        Requirements:
+        - Strong proficiency in Python, Flask, and SQL.
+        - Experience with Docker, Git, and REST API.
+        """
+        extracted = extract_job_skills(jd)
+        self.assertIn("Python", extracted)
+        self.assertIn("Flask", extracted)
+        self.assertIn("SQL", extracted)
+        self.assertIn("Docker", extracted)
+        self.assertIn("Git", extracted)
+        self.assertIn("REST API", extracted)
+
+    def test_case_insensitive_matching(self):
+        jd = "Looking for someone skilled in python, FLASK, and Sql."
+        extracted = extract_job_skills(jd)
+        self.assertEqual(set(extracted), {"Python", "Flask", "SQL"})
+
+    def test_matching_skills(self):
+        resume_skills = ["Python", "Flask", "SQL"]
+        jd = "Requirements: Python, Flask, SQL, Docker"
+        result = match_resume_to_job(resume_skills, jd)
+        self.assertEqual(set(result["matching_skills"]), {"Python", "Flask", "SQL"})
+        self.assertEqual(result["total_matching"], 3)
+
+    def test_missing_skills(self):
+        resume_skills = ["Python"]
+        jd = "Requirements: Python, Docker, Kubernetes"
+        result = match_resume_to_job(resume_skills, jd)
+        self.assertEqual(set(result["missing_skills"]), {"Docker", "Kubernetes"})
+        self.assertEqual(result["matching_skills"], ["Python"])
+
+    def test_partial_skill_overlap(self):
+        # 3 out of 5 required match = 60%
+        resume_skills = ["Python", "Flask", "SQL", "Java"]
+        jd = "Requirements: Python, Flask, SQL, Docker, Git"
+        result = match_resume_to_job(resume_skills, jd)
+        self.assertEqual(set(result["matching_skills"]), {"Python", "Flask", "SQL"})
+        self.assertEqual(set(result["missing_skills"]), {"Docker", "Git"})
+        self.assertEqual(result["total_required"], 5)
+        self.assertEqual(result["total_matching"], 3)
+        self.assertEqual(result["match_percentage"], 60)
+
+    def test_no_matching_skills(self):
+        resume_skills = ["C++", "Rust"]
+        jd = "Required: Python, Flask, Django"
+        result = match_resume_to_job(resume_skills, jd)
+        self.assertEqual(result["matching_skills"], [])
+        self.assertEqual(set(result["missing_skills"]), {"Python", "Flask", "Django"})
+        self.assertEqual(result["match_percentage"], 0)
+        self.assertEqual(result["total_matching"], 0)
+
+    def test_all_skills_matching(self):
+        resume_skills = ["Python", "SQL", "Docker", "Git"]
+        jd = "Requirements: Python, SQL"
+        result = match_resume_to_job(resume_skills, jd)
+        self.assertEqual(set(result["matching_skills"]), {"Python", "SQL"})
+        self.assertEqual(result["missing_skills"], [])
+        self.assertEqual(result["match_percentage"], 100)
+        self.assertEqual(result["total_matching"], 2)
+        self.assertEqual(result["total_required"], 2)
+
+    def test_duplicate_keywords_do_not_inflate_score(self):
+        resume_skills = ["Python", "Python", "Flask"]
+        jd = "Python Python Python, Flask Flask, SQL"
+        result = match_resume_to_job(resume_skills, jd)
+        # Unique required: Python, Flask, SQL (3)
+        # Matching: Python, Flask (2) -> 67%
+        self.assertEqual(result["total_required"], 3)
+        self.assertEqual(result["total_matching"], 2)
+        self.assertEqual(result["match_percentage"], 67)
+
+    def test_skill_aliases(self):
+        # JD contains aliases like k8s, postgres, js
+        jd = "Need experience in k8s, postgres, and js."
+        extracted = extract_job_skills(jd)
+        self.assertIn("Kubernetes", extracted)
+        self.assertIn("PostgreSQL", extracted)
+        self.assertIn("JavaScript", extracted)
+
+        # Resume has canonical names, JD has aliases
+        resume_skills = ["Kubernetes", "PostgreSQL", "JavaScript"]
+        result = match_resume_to_job(resume_skills, jd)
+        self.assertEqual(result["match_percentage"], 100)
+
+    def test_empty_job_description(self):
+        for empty_jd in ["", None, "   \n\t  "]:
+            result = match_resume_to_job(["Python"], empty_jd)
+            self.assertFalse(result["has_job_description"])
+            self.assertEqual(result["matching_skills"], [])
+            self.assertEqual(result["missing_skills"], [])
+            self.assertEqual(result["required_skills"], [])
+            self.assertEqual(result["match_percentage"], 0)
+            self.assertEqual(result["total_required"], 0)
+            self.assertEqual(result["total_matching"], 0)
+
+    def test_whitespace_only_job_description(self):
+        result = match_resume_to_job(["Python"], "     \n\n\t  ")
+        self.assertFalse(result["has_job_description"])
+        self.assertEqual(result["match_percentage"], 0)
+
+    def test_job_description_without_recognizable_skills(self):
+        jd = "Looking for a punctual individual who arrives at 9am every day to greet visitors."
+        result = match_resume_to_job(["Python"], jd)
+        self.assertTrue(result["has_job_description"])
+        self.assertEqual(result["required_skills"], [])
+        self.assertEqual(result["matching_skills"], [])
+        self.assertEqual(result["missing_skills"], [])
+        self.assertEqual(result["total_required"], 0)
+        self.assertEqual(result["total_matching"], 0)
+        self.assertEqual(result["match_percentage"], 0)
+        self.assertIn("No recognizable technical skills were detected", result["explanation"])
+
+    def test_empty_resume_skills(self):
+        jd = "Requirements: Python, Flask"
+        result = match_resume_to_job([], jd)
+        self.assertTrue(result["has_job_description"])
+        self.assertEqual(result["matching_skills"], [])
+        self.assertEqual(set(result["missing_skills"]), {"Python", "Flask"})
+        self.assertEqual(result["match_percentage"], 0)
+        self.assertEqual(result["total_required"], 2)
+
+    def test_both_inputs_containing_no_skills(self):
+        result = match_resume_to_job([], "Hello world, just a general note.")
+        self.assertTrue(result["has_job_description"])
+        self.assertEqual(result["matching_skills"], [])
+        self.assertEqual(result["missing_skills"], [])
+        self.assertEqual(result["match_percentage"], 0)
+        self.assertEqual(result["total_required"], 0)
+
+    def test_division_by_zero_protection(self):
+        # Total required is 0
+        result = match_resume_to_job(["Python", "SQL"], "Non-technical description")
+        self.assertEqual(result["total_required"], 0)
+        self.assertEqual(result["match_percentage"], 0)
+
+    def test_score_calculation_correctness(self):
+        # 1 match out of 4 required = 25%
+        resume_skills = ["Python"]
+        jd = "Need Python, AWS, Docker, Kubernetes"
+        result = match_resume_to_job(resume_skills, jd)
+        self.assertEqual(result["total_matching"], 1)
+        self.assertEqual(result["total_required"], 4)
+        self.assertEqual(result["match_percentage"], 25)
+        self.assertIn("25%", result["explanation"])
+
+    def test_flask_resume_only_workflow_compatibility(self):
+        # When job_description is not passed or empty in Flask analyze
+        from app import app
+        import io
+        from unittest.mock import patch
+
+        client = app.test_client()
+
+        # Mock pdf extraction and analyze_ats
+        with patch("app.extract_pdf_text", return_value="John Doe\nSkills\nPython, SQL"), \
+             patch("app.os.remove"):
+            data = {
+                "resume": (io.BytesIO(b"%PDF-1.4 dummy pdf"), "resume.pdf"),
+            }
+            response = client.post("/analyze", data=data, content_type="multipart/form-data")
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"Your Resume Analysis", response.data)
+            # Should not render the Job Description Match section card when none provided
+            self.assertNotIn(b"<h2>Job Description Match</h2>", response.data)
+
+    def test_flask_with_job_description_workflow(self):
+        from app import app
+        import io
+        from unittest.mock import patch
+
+        client = app.test_client()
+
+        with patch("app.extract_pdf_text", return_value="John Doe\nSkills\nPython, SQL"), \
+             patch("app.os.remove"):
+            data = {
+                "resume": (io.BytesIO(b"%PDF-1.4 dummy pdf"), "resume.pdf"),
+                "job_description": "We need Python and Docker developer."
+            }
+            response = client.post("/analyze", data=data, content_type="multipart/form-data")
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"Job Description Match", response.data)
+            self.assertIn(b"Python", response.data)
+            self.assertIn(b"Docker", response.data)
+
+
+if __name__ == "__main__":
+    unittest.main()

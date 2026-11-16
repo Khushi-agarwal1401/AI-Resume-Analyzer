@@ -11,6 +11,7 @@ from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
 from analyzer.ats_checker import analyze_ats
+from analyzer.job_matcher import match_resume_to_job
 
 
 app = Flask(__name__)
@@ -82,10 +83,16 @@ def analyze():
         # ATS Compatibility Analysis
         ats_result = analyze_ats(resume_text, found_skills)
 
+        # Job Description Matching
+        job_description = request.form.get("job_description", "")
+        job_match = match_resume_to_job(found_skills, job_description)
+
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
+        if job_match.get("has_job_description"):
+            print("JOB MATCH SCORE:", job_match.get("match_percentage"))
         print("=====================================\n")
 
         # Display Results
@@ -98,7 +105,8 @@ def analyze():
             resume_score=resume_score,
             score_breakdown=score_breakdown,
             ats_result=ats_result,
-            resume_sections=resume_sections
+            resume_sections=resume_sections,
+            job_match=job_match
         )
 
     except Exception as error:

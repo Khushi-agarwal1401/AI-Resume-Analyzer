@@ -830,3 +830,23 @@ body.dark-mode {
     line-height: 1.6;
     margin-bottom: 12px;
 }
+
+/* Job Description Matching */
+
+.dark-mode .job-description-box textarea {
+    background: #353047;
+    color: #eee9ff;
+    border-color: #554a72 !important;
+}
+
+.skill-tag.missing {
+    background: #fff0f0;
+    color: #d94545;
+    border-color: #ffd4d4;
+}
+
+.dark-mode .skill-tag.missing {
+    background: #4a2732;
+    color: #ff9b9b;
+    border-color: #6d3a49;
+}
