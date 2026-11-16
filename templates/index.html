@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,6 +8,9 @@
 
     <link rel="stylesheet"
     href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Loaded in <head> so the saved theme is applied before the page shows -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
 
 <body>
@@ -43,7 +45,13 @@
                 <h2>Your Career Dashboard</h2>
             </div>
 
-            <div class="profile">AI</div>
+            <div class="topbar-actions">
+                <button type="button" id="themeToggle" class="theme-toggle">
+                    🌙 Dark Mode
+                </button>
+
+                <div class="profile">AI</div>
+            </div>
         </header>
 
 
@@ -146,8 +154,5 @@
     </main>
 
 </div>
-<script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
-
-
