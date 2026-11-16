@@ -211,6 +211,39 @@
     </section>
 
 
+    <!-- Detected Resume Sections -->
+    {% if resume_sections %}
+    <section class="result-card">
+        <h2>Detected Resume Sections</h2>
+        <p>Extracted content organized by section:</p>
+
+        {% set section_titles = {
+            'contact_info': 'Contact Information',
+            'summary': 'Professional Summary',
+            'objective': 'Objective',
+            'education': 'Education',
+            'experience': 'Work Experience',
+            'skills': 'Skills',
+            'projects': 'Projects',
+            'certifications': 'Certifications',
+            'achievements': 'Achievements',
+            'languages': 'Languages',
+            'interests': 'Interests',
+            'publications': 'Publications',
+            'internships': 'Internships'
+        } %}
+
+        {% for sec_key, title in section_titles.items() %}
+            {% if resume_sections[sec_key] %}
+                <details style="margin-bottom: 12px;">
+                    <summary><strong>{{ title }}</strong></summary>
+                    <pre>{{ resume_sections[sec_key] }}</pre>
+                </details>
+            {% endif %}
+        {% endfor %}
+    </section>
+    {% endif %}
+
     <!-- Original Text -->
     <section class="result-card">
 
