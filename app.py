@@ -7,6 +7,7 @@ from flask import Flask, render_template, request
 from werkzeug.utils import secure_filename
 
 from analyzer.pdf_reader import extract_pdf_text
+from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
 from analyzer.ats_checker import analyze_ats
@@ -63,6 +64,9 @@ def analyze():
         if not resume_text.strip():
             return "No readable text found in this PDF."
 
+        # Detect and organize sections
+        resume_sections = extract_sections(resume_text)
+
         # Detect Skills
         found_skills = extract_skills(resume_text)
 
@@ -93,7 +97,8 @@ def analyze():
             resume_text=resume_text,
             resume_score=resume_score,
             score_breakdown=score_breakdown,
-            ats_result=ats_result
+            ats_result=ats_result,
+            resume_sections=resume_sections
         )
 
     except Exception as error:
