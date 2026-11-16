@@ -1,7 +1,99 @@
-
 /* =====================================
    AI RESUME ANALYZER - PROFESSIONAL UI
 ===================================== */
+
+/* =====================================
+   THEME COLORS
+   Light is the default. The dark values below are used when
+   <html data-theme="dark"> is set (see static/script.js).
+   To change a color in a theme, edit it here, not in the rules below.
+===================================== */
+
+:root {
+    color-scheme: light;
+
+    /* Page and text */
+    --page-bg: linear-gradient(120deg, #d84dbb, #7656e8, #ffbf76);
+    --text: #252442;
+    --heading: #302b4c;
+    --text-soft: #555555;
+    --muted: #77758c;
+    --faint: #a3a1b5;
+    --welcome: #9386c9;
+
+    /* Surfaces */
+    --surface: #faf9ff;
+    --surface-card: #ffffff;
+    --surface-soft: #f8f6ff;
+    --surface-hover: #f5f1ff;
+    --border: #eeedf6;
+
+    /* Accent (purple) */
+    --accent: #7054d9;
+    --accent-text: #7054d9;
+    --accent-soft: #eeeaff;
+    --accent-soft-border: #e4dcff;
+    --accent-dashed: #b9a9ed;
+
+    /* Score card and progress bars */
+    --score-card-bg: linear-gradient(140deg, #ffffff, #f4f0ff);
+    --score-inner: #ffffff;
+    --track: #e8e3f5;
+
+    /* Feature icon backgrounds */
+    --icon-purple: #f0ebff;
+    --icon-blue: #e9f3ff;
+    --icon-pink: #fff0f5;
+
+    /* Theme toggle button */
+    --toggle-bg: #ffffff;
+    --toggle-text: #7054d9;
+    --toggle-border: #e5defa;
+    --toggle-hover: #eeeaff;
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --page-bg: linear-gradient(120deg, #171326, #292044, #171326);
+    --text: #f5f2ff;
+    --heading: #f5f2ff;
+    --text-soft: #eee9ff;
+    --muted: #bdb5d2;
+    --faint: #aaa0c2;
+    --welcome: #b3a6e0;
+
+    --surface: #1e1b2e;
+    --surface-card: #29253c;
+    --surface-soft: #353047;
+    --surface-hover: #3d3752;
+    --border: #403956;
+
+    --accent: #7054d9;
+    --accent-text: #c4aaff;
+    --accent-soft: #40345f;
+    --accent-soft-border: #554477;
+    --accent-dashed: #62517e;
+
+    --score-card-bg: linear-gradient(140deg, #29253c, #342b4e);
+    --score-inner: #1e1b2e;
+    --track: #484257;
+
+    --icon-purple: #3b3158;
+    --icon-blue: #263a52;
+    --icon-pink: #4a2a3b;
+
+    --toggle-bg: #39314f;
+    --toggle-text: #e0d3ff;
+    --toggle-border: #62517e;
+    --toggle-hover: #51436f;
+}
+
+/* Set by script.js for an instant while the theme is switching */
+.theme-switching,
+.theme-switching * {
+    transition: none !important;
+}
 
 * {
     margin: 0;
@@ -15,8 +107,8 @@ html {
 
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
-    background: linear-gradient(120deg, #d84dbb, #7656e8, #ffbf76);
-    color: #252442;
+    background: var(--page-bg);
+    color: var(--text);
     min-height: 100vh;
 }
 
@@ -28,7 +120,7 @@ body {
     display: flex;
     min-height: calc(100vh - 36px);
     margin: 18px;
-    background: #faf9ff;
+    background: var(--surface);
     border-radius: 18px;
     overflow: hidden;
 }
@@ -38,29 +130,29 @@ body {
 .sidebar {
     width: 235px;
     flex-shrink: 0;
-    background: #ffffff;
+    background: var(--surface-card);
     padding: 30px 22px;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #eeeef5;
+    border-right: 1px solid var(--border);
 }
 
 .logo {
-    color: #7054d9;
+    color: var(--accent-text);
     font-size: 24px;
     margin-bottom: 55px;
 }
 
 .menu-title {
     font-size: 11px;
-    color: #a3a1b5;
+    color: var(--faint);
     letter-spacing: 2px;
     margin-bottom: 18px;
 }
 
 .sidebar a {
     text-decoration: none;
-    color: #77758c;
+    color: var(--muted);
     padding: 14px;
     border-radius: 10px;
     margin-bottom: 9px;
@@ -70,14 +162,14 @@ body {
 
 .sidebar a:hover,
 .sidebar a.active {
-    background: #f0ecff;
-    color: #7054d9;
+    background: var(--accent-soft);
+    color: var(--accent-text);
     font-weight: 600;
 }
 
 .sidebar-bottom {
     margin-top: auto;
-    background: #f5f2ff;
+    background: var(--surface-soft);
     padding: 17px;
     border-radius: 12px;
     line-height: 1.7;
@@ -86,11 +178,11 @@ body {
 .sidebar-bottom p {
     font-weight: 600;
     font-size: 13px;
-    color: #7054d9;
+    color: var(--accent-text);
 }
 
 .sidebar-bottom small {
-    color: #88849e;
+    color: var(--muted);
     font-size: 11px;
 }
 
@@ -110,7 +202,7 @@ body {
 }
 
 .welcome {
-    color: #9386c9;
+    color: var(--welcome);
     font-size: 11px;
     letter-spacing: 2px;
     font-weight: 700;
@@ -122,7 +214,7 @@ body {
 }
 
 .profile {
-    background: #7054d9;
+    background: var(--accent);
     color: white;
     width: 43px;
     height: 43px;
@@ -150,8 +242,8 @@ body {
     display: inline-block;
     font-size: 11px;
     letter-spacing: 1px;
-    background: #eeeaff;
-    color: #7054d9;
+    background: var(--accent-soft);
+    color: var(--accent-text);
     padding: 9px 13px;
     border-radius: 20px;
 }
@@ -221,10 +313,10 @@ body {
 }
 
 .feature-card {
-    background: white;
+    background: var(--surface-card);
     padding: 23px;
     border-radius: 15px;
-    border: 1px solid #eeedf6;
+    border: 1px solid var(--border);
     transition: 0.3s;
 }
 
@@ -244,15 +336,15 @@ body {
 }
 
 .purple {
-    background: #f0ebff;
+    background: var(--icon-purple);
 }
 
 .blue {
-    background: #e9f3ff;
+    background: var(--icon-blue);
 }
 
 .pink {
-    background: #fff0f5;
+    background: var(--icon-pink);
 }
 
 .feature-card h3 {
@@ -261,7 +353,7 @@ body {
 }
 
 .feature-card p {
-    color: #88869b;
+    color: var(--muted);
     font-size: 12px;
     line-height: 1.7;
 }
@@ -269,12 +361,12 @@ body {
 /* Upload Section */
 
 .upload-section {
-    background: white;
+    background: var(--surface-card);
     margin-top: 35px;
     padding: 30px;
     border-radius: 18px;
     text-align: center;
-    border: 1px solid #eeedf6;
+    border: 1px solid var(--border);
     box-shadow: 0 5px 20px #6552a20a;
 }
 
@@ -284,22 +376,22 @@ body {
 }
 
 .upload-section > p {
-    color: #9290a5;
+    color: var(--muted);
     font-size: 13px;
     margin-bottom: 25px;
 }
 
 .upload-box {
-    border: 2px dashed #b9a9ed;
-    background: #faf9ff;
+    border: 2px dashed var(--accent-dashed);
+    background: var(--surface-soft);
     padding: 30px 15px;
     border-radius: 15px;
     transition: 0.3s;
 }
 
 .upload-box:hover {
-    border-color: #7054d9;
-    background: #f5f1ff;
+    border-color: var(--accent);
+    background: var(--surface-hover);
 }
 
 .upload-icon {
@@ -313,7 +405,7 @@ body {
 }
 
 .upload-box p {
-    color: #9692a9;
+    color: var(--muted);
     font-size: 13px;
     margin-bottom: 18px;
 }
@@ -323,11 +415,11 @@ input[type="file"] {
     max-width: 100%;
     margin: 0 auto 15px;
     padding: 10px;
-    color: #666;
+    color: var(--text-soft);
 }
 
 .upload-box small {
-    color: #aaa5bb;
+    color: var(--faint);
     font-size: 11px;
 }
 
@@ -353,7 +445,7 @@ footer {
     text-align: center;
     margin-top: 35px;
     padding: 15px;
-    color: #aaa6b9;
+    color: var(--faint);
     font-size: 12px;
 }
 
@@ -366,7 +458,7 @@ footer {
     max-width: 1050px;
     margin: 35px auto;
     padding: 30px;
-    background: #faf9ff;
+    background: var(--surface);
     border-radius: 20px;
     box-shadow: 0 15px 45px #33215a25;
 }
@@ -379,42 +471,55 @@ footer {
 .result-header .back-link {
     display: block;
     text-align: left;
-    color: #7054d9;
+    color: var(--accent-text);
     text-decoration: none;
     margin-bottom: 25px;
     font-weight: 600;
 }
 
+/* Back link on the left, theme toggle on the right */
+.result-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.result-topbar .back-link {
+    margin-bottom: 0;
+}
+
 .result-header h1 {
     font-size: 32px;
-    color: #302b4c;
+    color: var(--heading);
     margin: 15px 0 8px;
 }
 
 .result-header p {
-    color: #89869d;
+    color: var(--muted);
     font-size: 14px;
 }
 
 /* Result Cards */
 
 .result-card {
-    background: white;
+    background: var(--surface-card);
     padding: 28px;
     margin-bottom: 22px;
     border-radius: 17px;
-    border: 1px solid #eeedf6;
+    border: 1px solid var(--border);
     box-shadow: 0 5px 20px #6552a20a;
 }
 
 .result-card h2 {
     font-size: 20px;
     margin-bottom: 20px;
-    color: #302b4c;
+    color: var(--heading);
 }
 
 .result-card > p {
-    color: #89869d;
+    color: var(--muted);
     font-size: 13px;
 }
 
@@ -422,7 +527,7 @@ footer {
 
 .score-card {
     text-align: center;
-    background: linear-gradient(140deg, #ffffff, #f4f0ff);
+    background: var(--score-card-bg);
 }
 
 .score-circle {
@@ -431,7 +536,7 @@ footer {
     border-radius: 50%;
     background: conic-gradient(
         #8064df calc(var(--score) * 1%),
-        #e8e3f5 0
+        var(--track) 0
     );
     display: grid;
     place-items: center;
@@ -442,7 +547,7 @@ footer {
 .score-inner {
     width: 135px;
     height: 135px;
-    background: white;
+    background: var(--score-inner);
     border-radius: 50%;
     display: flex;
     flex-direction: column;
@@ -452,21 +557,21 @@ footer {
 
 .score-inner strong {
     font-size: 42px;
-    color: #7054d9;
+    color: var(--accent-text);
 }
 
 .score-inner span {
-    color: #999;
+    color: var(--faint);
     font-size: 13px;
 }
 
 .score-card h3 {
-    color: #7054d9;
+    color: var(--accent-text);
     margin-bottom: 8px;
 }
 
 .score-card p {
-    color: #9290a5;
+    color: var(--muted);
     font-size: 13px;
 }
 
@@ -489,14 +594,14 @@ footer {
 }
 
 .score-label strong {
-    color: #7054d9;
+    color: var(--accent-text);
     white-space: nowrap;
 }
 
 .progress-track {
     width: 100%;
     height: 10px;
-    background: #e5e7eb;
+    background: var(--track);
     border-radius: 10px;
     overflow: hidden;
 }
@@ -519,24 +624,24 @@ footer {
 }
 
 .skill-tag {
-    background: #eeeaff;
-    color: #7054d9;
+    background: var(--accent-soft);
+    color: var(--accent-text);
     padding: 9px 15px;
     border-radius: 20px;
     font-size: 13px;
     font-weight: 600;
-    border: 1px solid #e4dcff;
+    border: 1px solid var(--accent-soft-border);
 }
 
 /* Suggestions */
 
 .suggestion {
-    background: #f8f6ff;
+    background: var(--surface-soft);
     border-left: 3px solid #9b7be9;
     padding: 14px;
     border-radius: 10px;
     margin: 12px 0;
-    color: #555;
+    color: var(--text-soft);
     font-size: 14px;
     line-height: 1.6;
 }
@@ -548,7 +653,7 @@ details {
 }
 
 details summary {
-    color: #7054d9;
+    color: var(--accent-text);
     cursor: pointer;
     font-weight: 600;
     padding: 10px 0;
@@ -559,11 +664,11 @@ details summary {
     overflow-wrap: anywhere;
     margin-top: 15px;
     padding: 18px;
-    background: #f8f7fc;
+    background: var(--surface-soft);
     border-radius: 10px;
     font-size: 13px;
     line-height: 1.7;
-    color: #555;
+    color: var(--text-soft);
     max-height: 400px;
     overflow-y: auto;
 }
@@ -673,7 +778,9 @@ details summary {
 }
 
 
-/* DARK LIGHT MODE BUTTON */
+/* =====================================
+   DARK / LIGHT MODE BUTTON
+===================================== */
 
 .topbar-actions {
     display: flex;
@@ -684,133 +791,21 @@ details summary {
 .theme-toggle {
     margin-top: 0;
     padding: 10px 16px;
-    border: 1px solid #e5defa;
+    border: 1px solid var(--toggle-border);
     border-radius: 25px;
-    background: white;
-    color: #7054d9;
+    background: var(--toggle-bg);
+    color: var(--toggle-text);
     font-size: 13px;
     cursor: pointer;
     transition: 0.3s;
 }
 
 .theme-toggle:hover {
-    background: #eeeaff;
+    background: var(--toggle-hover);
     transform: translateY(-2px);
 }
 
-/* DARK THEME */
-
-body.dark-mode {
-    background: linear-gradient(120deg, #171326, #292044, #171326);
-    color: #f5f2ff;
+.theme-toggle:focus-visible {
+    outline: 2px solid var(--accent-text);
+    outline-offset: 2px;
 }
-
-.dark-mode .dashboard,
-.dark-mode .result-container {
-    background: #1e1b2e;
-}
-
-.dark-mode .sidebar,
-.dark-mode .feature-card,
-.dark-mode .upload-section,
-.dark-mode .result-card {
-    background: #29253c;
-    border-color: #403956;
-}
-
-.dark-mode .main-content,
-.dark-mode .topbar,
-.dark-mode .result-header {
-    color: #f5f2ff;
-}
-
-.dark-mode h1,
-.dark-mode h2,
-.dark-mode h3,
-.dark-mode .section-title,
-.dark-mode .score-label,
-.dark-mode .result-card h2 {
-    color: #f5f2ff;
-}
-
-.dark-mode p,
-.dark-mode .feature-card p,
-.dark-mode .result-header p {
-    color: #bdb5d2;
-}
-
-.dark-mode .upload-box,
-.dark-mode .suggestion,
-.dark-mode .result-card pre {
-    background: #353047;
-    color: #eee9ff;
-}
-
-.dark-mode .score-card {
-    background: linear-gradient(140deg, #29253c, #342b4e);
-}
-
-.dark-mode .score-inner {
-    background: #1e1b2e;
-}
-
-.dark-mode .score-inner strong {
-    color: #b49aff;
-}
-
-.dark-mode .skill-tag {
-    background: #40345f;
-    color: #d5c5ff;
-    border-color: #554477;
-}
-
-.dark-mode .sidebar a {
-    color: #c4bbda;
-}
-
-.dark-mode .sidebar a:hover,
-.dark-mode .sidebar a.active {
-    background: #40345f;
-    color: #d5c5ff;
-}
-
-.dark-mode .sidebar-bottom {
-    background: #353047;
-}
-
-.dark-mode .sidebar-bottom p {
-    color: #c7b5ff;
-}
-
-.dark-mode .theme-toggle {
-    background: #39314f;
-    color: #e0d3ff;
-    border-color: #62517e;
-}
-
-.dark-mode .theme-toggle:hover {
-    background: #51436f;
-}
-
-.dark-mode .score-card h3 {
-    color: #c4aaff;
-}
-
-.dark-mode .upload-box small,
-.dark-mode .upload-box p {
-    color: #bdb5d2;
-}
-
-.dark-mode .back-link {
-    color: #c4aaff;
-}
-
-.dark-mode .progress-track {
-    background: #484257;
-}
-
-.dark-mode footer {
-    color: #aaa0c2;
-}
-
-
