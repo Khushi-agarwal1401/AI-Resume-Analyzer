@@ -8,9 +8,6 @@
 
     <link rel="stylesheet"
     href="{{ url_for('static', filename='style.css') }}">
-
-    <!-- Loaded in <head> so the saved theme is applied before the page shows -->
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
 
 <body>
@@ -146,6 +143,74 @@
     </section>
 
 
+    <!-- ATS Compatibility -->
+    <section class="result-card">
+
+        <h2>ATS Compatibility Analysis</h2>
+
+        <p class="ats-note">{{ ats_result.disclaimer }}</p>
+
+        <p class="ats-rating">
+            <strong>{{ ats_result.score }} / 100</strong>
+            &middot; {{ ats_result.rating }}
+        </p>
+
+        {% for category, item in ats_result.breakdown.items() %}
+
+        <div class="score-row">
+
+            <div class="score-label">
+                <span>{{ category }}</span>
+                <strong>{{ item.score }} / {{ item.max }}</strong>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-fill"
+                     data-width="{{ (item.score / item.max * 100)|round(1) }}">
+                </div>
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+        <h3 class="ats-subheading">Missing Sections</h3>
+
+        {% if ats_result.missing_sections %}
+            <div class="skill-list">
+                {% for section in ats_result.missing_sections %}
+                    <span class="skill-tag">
+                        {{ section.name }}{% if section.required %} (important){% endif %}
+                    </span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="ats-note">All common resume sections were found.</p>
+        {% endif %}
+
+        <h3 class="ats-subheading">Keyword Usage</h3>
+
+        <p class="ats-note">
+            {{ ats_result.keywords.skills_count }} skills detected,
+            {{ ats_result.keywords.action_verbs|length }} action verbs used,
+            {{ ats_result.keywords.metric_count }} measurable results found.
+        </p>
+
+        <h3 class="ats-subheading">Recommendations</h3>
+
+        {% for tip in ats_result.recommendations %}
+            <div class="suggestion">
+                ✦ {{ tip }}
+            </div>
+        {% else %}
+            <div class="suggestion">
+                ✦ No major issues found. Keep your resume simple and up to date.
+            </div>
+        {% endfor %}
+
+    </section>
+
+
     <!-- Original Text -->
     <section class="result-card">
 
@@ -165,6 +230,7 @@
 
 </div>
     <!-- Progress Bar JavaScript -->
+     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
         document.querySelectorAll('.progress-fill').forEach(bar => {
             bar.style.width = bar.dataset.width + '%';
