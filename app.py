@@ -6,7 +6,7 @@ import webbrowser
 from flask import Flask, render_template, request
 from werkzeug.utils import secure_filename
 
-from analyzer.pdf_reader import extract_pdf_text
+from analyzer.resume_extractor import extract_resume_text
 from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
@@ -37,13 +37,16 @@ def analyze():
 
     file = request.files["resume"]
 
-    if file.filename == "":
+    if not file.filename:
         return "No file selected."
 
-    if not file.filename.lower().endswith(".pdf"):
-        return "Only PDF files are allowed."
+    original_filename = file.filename
+    extension = os.path.splitext(original_filename)[1].lower()
 
-    filename = secure_filename(file.filename)
+    if extension not in {".pdf", ".docx"}:
+        return "Only PDF and DOCX files are allowed."
+
+    filename = secure_filename(original_filename)
 
     if not filename:
         return "Invalid filename."
@@ -56,14 +59,16 @@ def analyze():
     )
 
     try:
-        # Save PDF
+        # Save the uploaded resume.
         file.save(filepath)
 
-        # Extract PDF text
-        resume_text = extract_pdf_text(filepath)
+        # Extract text using the centralized format dispatcher.
+        resume_text = extract_resume_text(filepath)
 
         if not resume_text.strip():
-            return "No readable text found in this PDF."
+            if extension == ".pdf":
+                return "No readable text found in this PDF."
+            return "No readable text found in this DOCX."
 
         # Detect and organize sections
         resume_sections = extract_sections(resume_text)
@@ -111,11 +116,20 @@ def analyze():
 
     except Exception as error:
         print("Analysis Error:", error)
-        return "Unable to analyze this PDF. Please try another PDF."
+        if extension == ".pdf":
+            return "Unable to analyze this PDF. Please try another PDF."
+        return "Unable to analyze this DOCX. Please try another DOCX."
 
     finally:
         if filepath and os.path.exists(filepath):
-            os.remove(filepath)
+            try:
+                os.remove(filepath)
+            except OSError as cleanup_error:
+                print("Cleanup Error:", cleanup_error)
+        try:
+            file.close()
+        except (OSError, ValueError) as cleanup_error:
+            print("Upload Stream Cleanup Error:", cleanup_error)
 
 
 if __name__ == "__main__":
