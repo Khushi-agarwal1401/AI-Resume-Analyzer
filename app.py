@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 from analyzer.pdf_reader import extract_pdf_text
 from analyzer.docx_reader import DocxReadError, check_docx_file
 from analyzer.resume_extractor import extract_resume_text
+from analyzer.ocr import OCRError
 from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
@@ -157,6 +158,10 @@ def analyze():
             job_match=job_match,
             report_json=json.dumps(report)
         )
+
+    except OCRError as error:
+        # OCR errors (e.g. missing tesseract or image read failure) provide clear guidance
+        return str(error)
 
     except DocxReadError as error:
         # The message was written for the user, so it is safe to show
