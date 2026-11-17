@@ -244,6 +244,70 @@
     </section>
 
 
+    <!-- Duplicate & Semantic Similarity Detection -->
+    {% if duplicate_analysis %}
+    <section class="result-card duplicate-analysis-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <h2>🔍 Content Repetition & Duplicate Detection</h2>
+            <span class="tag" style="background: var(--surface-soft, #f3f0fc); color: var(--accent, #7054d9); font-weight: 600;">
+                NLP Semantic Analysis
+            </span>
+        </div>
+
+        <p class="ats-note" style="margin-top: 8px;">{{ duplicate_analysis.summary }}</p>
+
+        <p class="ats-rating" style="margin-top: 10px;">
+            <strong>{{ duplicate_analysis.total_duplicates_count }} Repetitive Pair(s) Identified</strong>
+            &middot; {{ duplicate_analysis.exact_duplicates_count }} Exact Duplicate(s)
+            &middot; {{ duplicate_analysis.semantic_duplicates_count }} Semantic Near-Duplicate(s)
+        </p>
+
+        <div style="padding: 10px 14px; background: rgba(112, 84, 217, 0.08); border-left: 3px solid var(--accent, #7054d9); border-radius: 6px; margin: 12px 0; font-size: 12px; color: var(--text-soft, #4b5563); line-height: 1.5;">
+            🔒 <strong>Safe Analysis:</strong> Your original resume text is preserved untouched. Review the highlighted repetitive statements below to improve content variety and maximize bullet point impact.
+        </div>
+
+        {% if duplicate_analysis.has_duplicates %}
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 16px;">
+            {% for pair in duplicate_analysis.duplicate_pairs %}
+            <div style="padding: 14px; border: 1px solid var(--border, #e5e7eb); border-radius: 10px; background: var(--surface-soft, #faf9fe);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                    <span style="font-size: 12px; font-weight: 700; {% if pair.type == 'exact' %}color: #dc2626;{% else %}color: #7054d9;{% endif %}">
+                        {% if pair.type == 'exact' %}⚠️ Exact Duplicate (100% Match){% else %}✦ Semantic Similarity ({{ pair.similarity_percentage }}% Similar){% endif %}
+                    </span>
+                    <span class="keyword-badge" style="{% if pair.type == 'exact' %}background: rgba(239, 68, 68, 0.15); color: #dc2626;{% else %}background: rgba(112, 84, 217, 0.15); color: #7054d9;{% endif %}">
+                        {{ pair.type|capitalize }}
+                    </span>
+                </div>
+
+                <div style="margin: 8px 0; padding: 10px 12px; background: var(--surface, #ffffff); border-radius: 6px; border-left: 3px solid #d1d5db; font-size: 13px; color: var(--text, #374151); line-height: 1.45;">
+                    <strong style="color: var(--muted, #6b7280); font-size: 11px; display: block; margin-bottom: 2px;">Statement 1:</strong>
+                    {{ pair.sentence_1 }}
+                </div>
+
+                <div style="margin: 8px 0; padding: 10px 12px; background: var(--surface, #ffffff); border-radius: 6px; border-left: 3px solid {% if pair.type == 'exact' %}#dc2626{% else %}#7054d9{% endif %}; font-size: 13px; color: var(--text, #374151); line-height: 1.45;">
+                    <strong style="color: var(--muted, #6b7280); font-size: 11px; display: block; margin-bottom: 2px;">Statement 2:</strong>
+                    {{ pair.sentence_2 }}
+                </div>
+
+                <p style="font-size: 12px; color: var(--muted, #6b7280); margin: 6px 0 2px 0;">
+                    ℹ️ {{ pair.explanation }}
+                </p>
+
+                <p style="font-size: 12px; color: #d97706; margin: 2px 0 0 0;">
+                    💡 <em>Recommendation: {{ pair.suggestion }}</em>
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="suggestion" style="margin-top: 12px;">
+            ✦ No repetitive or duplicate statements detected. Every bullet point contributes unique information.
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+
     <!-- Suggestions -->
     <section class="result-card">
 

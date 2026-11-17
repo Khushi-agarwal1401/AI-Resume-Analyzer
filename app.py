@@ -19,6 +19,7 @@ from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report
+from analyzer.duplicate_detector import detect_duplicates
 
 
 app = Flask(__name__)
@@ -122,6 +123,9 @@ def analyze():
             resume_sections=resume_sections
         )
 
+        # Semantic and Exact Duplicate Content Detection
+        duplicate_analysis = detect_duplicates(resume_text)
+
         # Results for the PDF report (sent back by the Download button)
         report = {
             "score": resume_score,
@@ -129,12 +133,14 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "job_match": job_match,
+            "duplicate_analysis": duplicate_analysis,
         }
 
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
+        print("DUPLICATE STATEMENTS DETECTED:", duplicate_analysis.get("total_duplicates_count"))
         if job_match.get("has_job_description"):
             print("JOB MATCH SCORE:", job_match.get("match_percentage"))
             if job_match.get("semantic_match_percentage") is not None:
@@ -155,6 +161,7 @@ def analyze():
             ats_result=ats_result,
             resume_sections=resume_sections,
             job_match=job_match,
+            duplicate_analysis=duplicate_analysis,
             report_json=json.dumps(report)
         )
 
