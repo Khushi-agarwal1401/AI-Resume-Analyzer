@@ -8,6 +8,9 @@
 
     <link rel="stylesheet"
     href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Loaded in <head> so the saved theme is applied before the page shows -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
 
 <body>
@@ -36,26 +39,63 @@
 
 
     <!-- Resume Score -->
+    {#
+        One value drives the number, the ring, the accessibility text and the
+        label below, so they always match. It comes straight from the backend
+        score and is kept between 0 and 100.
+    #}
+    {% set score = [[resume_score|int, 0]|max, 100]|min %}
+
     <section class="result-card score-card">
 
         <h2>Overall Resume Score</h2>
 
-        <div class="score-circle"
-             style="--score: {{ resume_score }}%">
+        <div class="score-ring"
+             role="progressbar"
+             aria-label="Overall resume score"
+             aria-valuemin="0"
+             aria-valuemax="100"
+             aria-valuenow="{{ score }}"
+             aria-valuetext="{{ score }} out of 100">
 
-            <div class="score-inner">
-                <strong>{{ resume_score }}</strong>
+            <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+
+                <defs>
+                    <linearGradient id="scoreRingGradient"
+                                    x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" class="score-ring-stop-start" />
+                        <stop offset="100%" class="score-ring-stop-end" />
+                    </linearGradient>
+                </defs>
+
+                <circle class="score-ring-track" cx="60" cy="60" r="52" />
+
+                {# pathLength="100" makes the ring length 100, so the empty
+                   part of the ring is simply 100 - score #}
+                {% if score > 0 %}
+                <circle class="score-ring-fill"
+                        cx="60" cy="60" r="52"
+                        pathLength="100"
+                        stroke-dasharray="100"
+                        stroke-dashoffset="{{ 100 - score }}"
+                        transform="rotate(-90 60 60)" />
+                {% endif %}
+
+            </svg>
+
+            <div class="score-ring-text">
+                <strong>{{ score }}</strong>
                 <span>/ 100</span>
             </div>
 
         </div>
 
         <h3>
-            {% if resume_score >= 80 %}
+            {% if score >= 80 %}
                 Excellent Resume!
-            {% elif resume_score >= 60 %}
+            {% elif score >= 60 %}
                 Good Progress!
-            {% elif resume_score >= 40 %}
+            {% elif score >= 40 %}
                 Needs Improvement
             {% else %}
                 Keep Improving!
@@ -615,7 +655,6 @@
 
 </div>
     <!-- Progress Bar JavaScript -->
-     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
         document.querySelectorAll('.progress-fill').forEach(bar => {
             bar.style.width = bar.dataset.width + '%';
