@@ -1,4 +1,3 @@
-
 import os
 import uuid
 import threading
@@ -10,12 +9,16 @@ from werkzeug.utils import secure_filename
 from analyzer.pdf_reader import extract_pdf_text
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
+from analyzer.keyword_analyzer import analyze_keywords
 
 
 app = Flask(__name__)
 
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
+
+# The optional job description is cut to this many characters
+MAX_JOB_DESCRIPTION_LENGTH = 20000
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
@@ -75,6 +78,12 @@ def analyze():
         resume_score = score_data["score"]
         score_breakdown = score_data["breakdown"]
 
+        # Keyword analysis (optional job description from the form)
+        job_description = request.form.get("job_description", "")
+        job_description = job_description[:MAX_JOB_DESCRIPTION_LENGTH]
+
+        keyword_analysis = analyze_keywords(resume_text, job_description)
+
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("RESUME SCORE:", resume_score)
@@ -89,7 +98,8 @@ def analyze():
             skill_count=len(found_skills),
             resume_text=resume_text,
             resume_score=resume_score,
-            score_breakdown=score_breakdown
+            score_breakdown=score_breakdown,
+            keyword_analysis=keyword_analysis
         )
 
     except Exception as error:
@@ -111,7 +121,3 @@ if __name__ == "__main__":
     ).start()
 
     app.run(debug=True, use_reloader=False)
-
-
-
-

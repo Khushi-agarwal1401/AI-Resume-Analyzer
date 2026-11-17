@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -130,6 +129,22 @@
 
                 </div>
 
+                <div class="job-input">
+
+                    <label for="job_description">
+                        Job description <span>(optional)</span>
+                    </label>
+
+                    <textarea id="job_description"
+                              name="job_description"
+                              rows="6"
+                              maxlength="20000"
+                              placeholder="Paste a job description here to see which of its keywords your resume is missing."></textarea>
+
+                    <small>Only used for this analysis. It is not saved.</small>
+
+                </div>
+
                 <button type="submit">
                     ✦ Analyze My Resume
                 </button>
@@ -149,5 +164,3 @@
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
-
-
