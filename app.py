@@ -18,7 +18,7 @@ from analyzer.suggestions import generate_recommendations
 from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
-from analyzer.report_generator import build_report
+from analyzer.report_generator import build_report, build_txt_report
 
 
 app = Flask(__name__)
@@ -122,12 +122,13 @@ def analyze():
             resume_sections=resume_sections
         )
 
-        # Results for the PDF report (sent back by the Download button)
+        # Results for the report (sent back by Download buttons)
         report = {
             "score": resume_score,
             "breakdown": score_breakdown,
             "skills": found_skills,
             "suggestions": suggestions,
+            "recommendations": recommendations,
             "job_match": job_match,
         }
 
@@ -203,6 +204,24 @@ def download_report():
         mimetype="application/pdf",
         as_attachment=True,
         download_name="resume-analysis-report.pdf"
+    )
+
+
+@app.route("/download-txt-report", methods=["POST"])
+def download_txt_report():
+
+    try:
+        report_data = json.loads(request.form["report"])
+        txt_content = build_txt_report(report_data)
+    except Exception as error:
+        print("TXT Report Error:", error)
+        return "Unable to create the report. Please analyze your resume again.", 400
+
+    return send_file(
+        io.BytesIO(txt_content.encode("utf-8")),
+        mimetype="text/plain; charset=utf-8",
+        as_attachment=True,
+        download_name="resume-analysis-report.txt"
     )
 
 
