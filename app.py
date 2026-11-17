@@ -5,7 +5,7 @@ import uuid
 import threading
 import webbrowser
 
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, session, redirect, url_for, jsonify
 from werkzeug.utils import secure_filename
 
 from analyzer.pdf_reader import extract_pdf_text
@@ -19,9 +19,11 @@ from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report
+from analyzer.roadmap_generator import generate_roadmap, calculate_roadmap_progress
 
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "resume-ai-roadmap-session-key-2026")
 
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
@@ -122,6 +124,19 @@ def analyze():
             resume_sections=resume_sections
         )
 
+        # Generate personalized 3-phase improvement roadmap from actual analysis results
+        roadmap = generate_roadmap(
+            resume_score=resume_score,
+            score_breakdown=score_breakdown,
+            found_skills=found_skills,
+            ats_result=ats_result,
+            keyword_analysis=keyword_analysis,
+            job_match=job_match,
+            recommendations=recommendations,
+        )
+        session["roadmap"] = roadmap
+        session["completed_tasks"] = []
+
         # Results for the PDF report (sent back by the Download button)
         report = {
             "score": resume_score,
@@ -129,12 +144,14 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "job_match": job_match,
+            "roadmap": roadmap,
         }
 
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
+        print("ROADMAP TASKS:", roadmap.get("total_tasks"))
         if job_match.get("has_job_description"):
             print("JOB MATCH SCORE:", job_match.get("match_percentage"))
             if job_match.get("semantic_match_percentage") is not None:
@@ -155,6 +172,7 @@ def analyze():
             ats_result=ats_result,
             resume_sections=resume_sections,
             job_match=job_match,
+            roadmap=roadmap,
             report_json=json.dumps(report)
         )
 
@@ -204,6 +222,50 @@ def download_report():
         as_attachment=True,
         download_name="resume-analysis-report.pdf"
     )
+
+
+@app.route("/roadmap", methods=["GET"])
+def view_roadmap():
+    """View the interactive resume improvement roadmap for the current session."""
+    roadmap = session.get("roadmap")
+    if not roadmap:
+        return redirect("/")
+
+    return render_template("roadmap.html", roadmap=roadmap)
+
+
+@app.route("/roadmap/toggle", methods=["POST"])
+def toggle_roadmap_task():
+    """Toggle a roadmap task's completed state and update session progress."""
+    roadmap = session.get("roadmap")
+    if not roadmap:
+        return jsonify({"error": "No roadmap in session"}), 404
+
+    data = request.get_json(silent=True) or request.form
+    task_id = data.get("task_id")
+    completed = data.get("completed")
+
+    if isinstance(completed, str):
+        completed = completed.lower() in ("true", "1", "yes")
+
+    completed_tasks = set(session.get("completed_tasks", []))
+    if completed:
+        completed_tasks.add(task_id)
+    else:
+        completed_tasks.discard(task_id)
+
+    session["completed_tasks"] = list(completed_tasks)
+    roadmap = calculate_roadmap_progress(roadmap, completed_tasks)
+    session["roadmap"] = roadmap
+
+    return jsonify({
+        "status": "success",
+        "task_id": task_id,
+        "completed": completed,
+        "completed_tasks": roadmap["completed_tasks"],
+        "total_tasks": roadmap["total_tasks"],
+        "completion_percentage": roadmap["completion_percentage"],
+    })
 
 
 if __name__ == "__main__":
