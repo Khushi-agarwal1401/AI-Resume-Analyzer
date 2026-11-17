@@ -19,6 +19,7 @@ from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report
+from analyzer.skill_gap_analyzer import analyze_skill_gap, get_supported_roles
 
 
 app = Flask(__name__)
@@ -35,7 +36,7 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("index.html", supported_roles=get_supported_roles())
 
 
 @app.route("/analyze", methods=["POST"])
@@ -51,18 +52,14 @@ def analyze():
     if not file.filename:
         return "No file selected."
 
-    extension = os.path.splitext(file.filename.lower())[1]
+    original_filename = file.filename
+    extension = os.path.splitext(original_filename.lower())[1]
 
     if extension not in ALLOWED_EXTENSIONS:
         return "Only PDF and DOCX files are allowed."
 
     # Used in messages shown to the user: "PDF" or "DOCX"
     file_type = extension[1:].upper()
-    original_filename = file.filename
-    extension = os.path.splitext(original_filename)[1].lower()
-
-    if extension not in {".pdf", ".docx"}:
-        return "Only PDF and DOCX files are allowed."
 
     filename = secure_filename(original_filename)
 
@@ -122,6 +119,10 @@ def analyze():
             resume_sections=resume_sections
         )
 
+        # Personalized Skill Gap Analysis against selected or best-matching career role
+        target_role = request.form.get("target_role", "").strip() or None
+        skill_gap = analyze_skill_gap(found_skills, target_role=target_role)
+
         # Results for the PDF report (sent back by the Download button)
         report = {
             "score": resume_score,
@@ -129,12 +130,15 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "job_match": job_match,
+            "skill_gap": skill_gap,
         }
 
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
+        print("TARGET ROLE:", skill_gap.get("target_role"))
+        print("SKILL GAP MATCH:", f"{skill_gap.get('match_percentage')}% ({skill_gap.get('readiness_level')})")
         if job_match.get("has_job_description"):
             print("JOB MATCH SCORE:", job_match.get("match_percentage"))
             if job_match.get("semantic_match_percentage") is not None:
@@ -155,6 +159,9 @@ def analyze():
             ats_result=ats_result,
             resume_sections=resume_sections,
             job_match=job_match,
+            skill_gap=skill_gap,
+            supported_roles=get_supported_roles(),
+            selected_role=target_role,
             report_json=json.dumps(report)
         )
 
