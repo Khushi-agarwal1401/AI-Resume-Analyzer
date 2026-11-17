@@ -819,6 +819,23 @@ body.dark-mode {
     font-size: 15px;
 }
 
+/* Resume recommendations (issue #18). Colors are inherited or semi-transparent,
+   so they work in light and dark mode. */
+.rec-title {
+    margin: 22px 0 6px;
+    font-size: 16px;
+    color: inherit;
+}
+
+.rec-example {
+    display: block;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(128, 128, 128, 0.15);
+    color: inherit;
+    font-family: inherit;
+    font-size: 13px;
 /* =====================================
    KEYWORD ANALYSIS (issue #17)
    Colors are variables on .keyword-card and .job-input. Dark values are

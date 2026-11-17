@@ -10,6 +10,7 @@ from analyzer.resume_extractor import extract_resume_text
 from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
+from analyzer.suggestions import generate_recommendations
 from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
@@ -89,6 +90,8 @@ def analyze():
         resume_score = score_data["score"]
         score_breakdown = score_data["breakdown"]
 
+        # Section-wise improvement recommendations
+        recommendations = generate_recommendations(resume_text)
         # Keyword analysis (optional job description from the form)
         job_description = request.form.get("job_description", "")
         job_description = job_description[:MAX_JOB_DESCRIPTION_LENGTH]
@@ -118,6 +121,7 @@ def analyze():
             resume_text=resume_text,
             resume_score=resume_score,
             score_breakdown=score_breakdown,
+            recommendations=recommendations
             keyword_analysis=keyword_analysis
             ats_result=ats_result,
             resume_sections=resume_sections,
