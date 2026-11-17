@@ -1,0 +1,379 @@
+"""Keyword density analysis (issue #17).
+
+How it works, step by step:
+1. Clean the text (remove emails and links) and split it into words.
+2. Find the important keywords:
+      - known skills (Python, SQL, React, ...)
+      - other words that repeat and are not boring filler words
+3. Count each keyword and work out its density:
+      density % = (times the keyword appears / total words) * 100
+4. Give every keyword a status: "once", "repeated" or "overused".
+5. If a job description is given, compare its keywords with the resume
+   and list which ones are matched and which are missing.
+
+The main function is analyze_keywords(). Everything else is a helper.
+"""
+
+import re
+from collections import Counter
+
+from analyzer.skills_extractor import SKILLS
+
+
+# ------------------------------------------------------------------
+# Settings you can tune
+# ------------------------------------------------------------------
+
+REPEATED_MIN_COUNT = 2        # appears this many times or more -> "repeated"
+OVERUSED_MIN_COUNT = 6        # "overused" needs at least this many times ...
+OVERUSED_MIN_DENSITY = 2.0    # ... AND at least this % of all words
+GENERIC_MIN_COUNT = 2         # a normal (non-skill) word must repeat to count
+MAX_RESUME_KEYWORDS = 15      # how many keywords to show for the resume
+MAX_JOB_KEYWORDS = 20         # how many keywords to take from the job text
+
+
+# ------------------------------------------------------------------
+# Word lists
+# ------------------------------------------------------------------
+
+# Extra keywords that often appear in job descriptions but are not in the
+# SKILLS list of skills_extractor.py. Add more here to improve matching.
+EXTRA_KEYWORDS = [
+    "TypeScript", "Angular", "Vue", "Express.js", "FastAPI", "Spring Boot",
+    "PostgreSQL", "Redis", "GraphQL", "Docker", "Kubernetes", "AWS", "Azure",
+    "Linux", "Agile", "Scrum", "CI/CD", "Jenkins", "Firebase", "Bootstrap",
+    "Tailwind CSS", "Scikit-learn", "OpenCV", "Matplotlib", "Power BI",
+    "Tableau", "Leadership", "Teamwork",
+]
+
+# Everyday English words that are never useful keywords.
+STOP_WORDS = {
+    "a", "about", "above", "after", "again", "all", "also", "am", "an",
+    "and", "any", "are", "as", "at", "be", "because", "been", "before",
+    "being", "below", "between", "both", "but", "by", "can", "could", "did",
+    "do", "does", "doing", "down", "during", "each", "few", "for", "from",
+    "further", "had", "has", "have", "having", "he", "her", "here", "hers",
+    "him", "his", "how", "i", "if", "in", "into", "is", "it", "its",
+    "itself", "just", "me", "more", "most", "my", "no", "nor", "not", "of",
+    "off", "on", "once", "only", "or", "other", "our", "ours", "out", "over",
+    "own", "per", "same", "she", "should", "so", "some", "such", "than",
+    "that", "the", "their", "them", "then", "there", "these", "they", "this",
+    "those", "through", "to", "too", "under", "until", "up", "via", "very",
+    "was", "we", "were", "what", "when", "where", "which", "while", "who",
+    "whom", "why", "will", "with", "would", "you", "your", "yours",
+}
+
+# Boring words that show up in almost every resume or job post.
+# (Different spellings like "worked" / "working" are matched through _stem.)
+FILLER_WORDS = [
+    "ability", "able", "across", "applicant", "apply", "based", "candidate",
+    "cgpa", "college", "company", "contact", "degree", "developer",
+    "education", "email", "engineer", "ensure", "environment", "etc", "excellent", "experience",
+    "experienced", "get", "good", "gpa", "great", "help", "include",
+    "including", "institute", "job", "knowledge", "like", "looking", "make",
+    "made", "must", "need", "new", "objective", "opportunity", "passionate",
+    "phone", "plus", "position", "preferred", "present", "profile",
+    "project", "provide", "related", "require", "required", "requirement",
+    "responsibilities", "responsibility", "responsible", "role", "school",
+    "seeking", "skill", "strong", "summary", "support", "team", "technical",
+    "understanding", "university", "use", "used", "using", "various", "well",
+    "within", "work", "working", "year",
+]
+
+# Matches one "word". It may contain + # . - inside, such as "node.js".
+TOKEN_PATTERN = re.compile(r"[a-z0-9][a-z0-9+#.\-]*")
+
+
+# ------------------------------------------------------------------
+# Small helpers
+# ------------------------------------------------------------------
+
+def _stem(word):
+    """Make a rough "root" of a word so that similar forms are grouped.
+
+    "projects" -> "project", "developed" / "developing" -> "develop",
+    "databases" -> "database". It is simple on purpose and not perfect.
+    """
+    for suffix in ("ing", "ed", "s"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 4:
+            # "class", "status" and "analysis" end with s but are not plurals
+            if suffix == "s" and word.endswith(("ss", "us", "is")):
+                continue
+            word = word[:-len(suffix)]
+            break
+
+    # "manage" and "managed" should end up the same
+    if word.endswith("e") and len(word) > 4:
+        word = word[:-1]
+
+    return word
+
+
+FILLER_STEMS = {_stem(word) for word in FILLER_WORDS}
+
+
+def _keyword_pattern(keyword):
+    """Build a regex that finds a keyword as a whole word only.
+
+    "Java" must not match inside "JavaScript", and "C" must not match the
+    C in "C++". That is why letters, + and # are not allowed on either side.
+    """
+    return re.compile(
+        r"(?<![\w+#.])" + re.escape(keyword.lower()) + r"(?![\w+#])"
+    )
+
+
+def _build_known_patterns():
+    """Make (name, pattern) pairs for every known keyword, longest first.
+
+    Longest first means "Tailwind CSS" is counted before "CSS", so the
+    shorter keyword is not counted twice.
+    """
+    names = {}
+    for name in SKILLS + EXTRA_KEYWORDS:
+        names.setdefault(name.lower(), name)
+
+    ordered = sorted(names.items(), key=lambda item: len(item[0]), reverse=True)
+
+    return [(name, _keyword_pattern(key)) for key, name in ordered]
+
+
+KNOWN_PATTERNS = _build_known_patterns()
+
+
+def _clean(text):
+    """Lowercase the text and remove emails and links (they are not keywords)."""
+    text = text.lower()
+    text = re.sub(r"\S+@\S+", " ", text)                          # emails
+    text = re.sub(r"(?:https?://|www\.)\S+", " ", text)           # web links
+    text = re.sub(r"\b(?:github|linkedin)\.com\S*", " ", text)    # profile links
+    return text
+
+
+def _count_all(text):
+    """Count every keyword in the text.
+
+    Returns (total_words, entries).
+    entries maps a key to a dict like:
+        {"keyword": "Python", "count": 4, "is_skill": True}
+    """
+    cleaned = _clean(text)
+    total_words = len(TOKEN_PATTERN.findall(cleaned))
+
+    entries = {}
+
+    # Step A: known skills. After counting a skill we blank it out, so a
+    # shorter skill inside it is not counted again, and its words are not
+    # counted as normal words in step B.
+    remaining = cleaned
+
+    for name, pattern in KNOWN_PATTERNS:
+        found = len(pattern.findall(remaining))
+
+        if found:
+            entries[("skill", name.lower())] = {
+                "keyword": name,
+                "count": found,
+                "is_skill": True,
+            }
+            remaining = pattern.sub(" ", remaining)
+
+    # Step B: normal words (grouped by their stem)
+    counts = Counter()
+    spellings = {}
+
+    for token in TOKEN_PATTERN.findall(remaining):
+        word = token.strip(".-")
+
+        if len(word) < 3 or not word[0].isalpha():
+            continue
+
+        stem = _stem(word)
+
+        if word in STOP_WORDS or stem in FILLER_STEMS:
+            continue
+
+        counts[stem] += 1
+        spellings.setdefault(stem, Counter())[word] += 1
+
+    for stem, count in counts.items():
+        shown = spellings[stem].most_common(1)[0][0]
+
+        entries[("word", stem)] = {
+            "keyword": shown,
+            "count": count,
+            "is_skill": False,
+        }
+
+    return total_words, entries
+
+
+def _sort_key(item):
+    """Most frequent first, skills before normal words, then A to Z."""
+    _key, entry = item
+    return (-entry["count"], not entry["is_skill"], entry["keyword"].lower())
+
+
+def _pick_keywords(entries, limit):
+    """Choose the important keywords: all skills first, then repeated words."""
+    skills = [item for item in entries.items() if item[1]["is_skill"]]
+    words = [
+        item for item in entries.items()
+        if not item[1]["is_skill"] and item[1]["count"] >= GENERIC_MIN_COUNT
+    ]
+
+    skills.sort(key=_sort_key)
+    words.sort(key=_sort_key)
+
+    return (skills + words)[:limit]
+
+
+def _get_status(count, density):
+    """Return "overused", "repeated" or "once" for a keyword."""
+    if count >= OVERUSED_MIN_COUNT and density >= OVERUSED_MIN_DENSITY:
+        return "overused"
+
+    if count >= REPEATED_MIN_COUNT:
+        return "repeated"
+
+    return "once"
+
+
+def _compare_with_job(resume_entries, job_description):
+    """Compare the job description's keywords with the resume's keywords."""
+    _words, job_entries = _count_all(job_description)
+    wanted = _pick_keywords(job_entries, MAX_JOB_KEYWORDS)
+
+    matched = []
+    missing = []
+
+    for key, entry in wanted:
+        in_resume = resume_entries.get(key)
+
+        if in_resume:
+            matched.append({
+                "keyword": entry["keyword"],
+                "resume_count": in_resume["count"],
+                "job_count": entry["count"],
+            })
+        else:
+            missing.append({
+                "keyword": entry["keyword"],
+                "job_count": entry["count"],
+            })
+
+    percent = round(len(matched) / len(wanted) * 100) if wanted else None
+
+    return {
+        "keyword_count": len(wanted),
+        "match_percent": percent,
+        "matched": matched,
+        "missing": missing,
+    }
+
+
+def _make_tips(keywords, job_match):
+    """Write short, plain-English advice based on the results."""
+    tips = []
+
+    for item in keywords:
+        if item["status"] == "overused":
+            tips.append(
+                f'"{item["keyword"]}" appears {item["count"]} times '
+                f'({item["density"]}% of your resume). '
+                "Try different wording or remove some repeats."
+            )
+
+    if job_match and job_match["missing"]:
+        names = ", ".join(item["keyword"] for item in job_match["missing"][:6])
+        tips.append(
+            "Add these job keywords if you really have the skill or "
+            f"experience: {names}."
+        )
+
+    if not keywords:
+        tips.append(
+            "No clear keywords were found. Add a Skills section that lists "
+            "your tools and technologies."
+        )
+
+    if not tips:
+        tips.append("Your keywords look natural and well spread. Nice work.")
+
+    return tips
+
+
+# ------------------------------------------------------------------
+# Main function
+# ------------------------------------------------------------------
+
+def analyze_keywords(resume_text, job_description=""):
+    """Analyze the keywords of a resume (and compare with a job description).
+
+    Returns a dictionary:
+        total_words      number of words in the resume
+        keywords         list of {keyword, count, density, status,
+                         is_skill, bar_width}
+        repeated_total   how many keywords are "repeated"
+        overused_total   how many keywords are "overused"
+        job_match        None, or {keyword_count, match_percent,
+                         matched, missing}
+        tips             list of short advice sentences
+        rules            the numbers used for the statuses (for the page)
+    """
+    total_words, resume_entries = _count_all(resume_text)
+
+    chosen = _pick_keywords(resume_entries, MAX_RESUME_KEYWORDS)
+    max_count = max((entry["count"] for _key, entry in chosen), default=1)
+
+    keywords = []
+
+    for _key, entry in chosen:
+        density = entry["count"] / total_words * 100 if total_words else 0.0
+
+        keywords.append({
+            "keyword": entry["keyword"],
+            "count": entry["count"],
+            "density": round(density, 1),
+            "status": _get_status(entry["count"], density),
+            "is_skill": entry["is_skill"],
+            "bar_width": round(entry["count"] / max_count * 100),
+        })
+
+    job_match = None
+
+    if job_description and job_description.strip():
+        job_match = _compare_with_job(resume_entries, job_description)
+
+    return {
+        "total_words": total_words,
+        "keywords": keywords,
+        "repeated_total": sum(1 for k in keywords if k["status"] == "repeated"),
+        "overused_total": sum(1 for k in keywords if k["status"] == "overused"),
+        "job_match": job_match,
+        "tips": _make_tips(keywords, job_match),
+        "rules": {
+            "repeated_count": REPEATED_MIN_COUNT,
+            "overused_count": OVERUSED_MIN_COUNT,
+            "overused_density": OVERUSED_MIN_DENSITY,
+        },
+    }
+
+
+if __name__ == "__main__":
+
+    # Try it from the project folder with:  python -m analyzer.keyword_analyzer
+
+    sample_resume = """
+    Python developer. Built Flask apps with Python and SQL.
+    Used Python for data scripts. Skills: Python, Flask, SQL, Git
+    """
+
+    sample_job = "We need Python, Flask and Docker. Docker experience is a plus."
+
+    result = analyze_keywords(sample_resume, sample_job)
+
+    for item in result["keywords"]:
+        print(item["keyword"], item["count"], f'{item["density"]}%', item["status"])
+
+    print("Job match:", result["job_match"]["match_percent"], "%")

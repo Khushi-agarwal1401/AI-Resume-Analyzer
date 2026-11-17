@@ -10,6 +10,7 @@ from analyzer.pdf_reader import extract_pdf_text
 from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
+from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 
@@ -18,6 +19,9 @@ app = Flask(__name__)
 
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
+
+# The optional job description is cut to this many characters
+MAX_JOB_DESCRIPTION_LENGTH = 20000
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
@@ -80,6 +84,11 @@ def analyze():
         resume_score = score_data["score"]
         score_breakdown = score_data["breakdown"]
 
+        # Keyword analysis (optional job description from the form)
+        job_description = request.form.get("job_description", "")
+        job_description = job_description[:MAX_JOB_DESCRIPTION_LENGTH]
+
+        keyword_analysis = analyze_keywords(resume_text, job_description)
         # ATS Compatibility Analysis
         ats_result = analyze_ats(resume_text, found_skills)
 
@@ -104,6 +113,7 @@ def analyze():
             resume_text=resume_text,
             resume_score=resume_score,
             score_breakdown=score_breakdown,
+            keyword_analysis=keyword_analysis
             ats_result=ats_result,
             resume_sections=resume_sections,
             job_match=job_match
