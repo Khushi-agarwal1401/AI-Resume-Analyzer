@@ -127,6 +127,123 @@
     </section>
 
 
+    <!-- Keyword Analysis -->
+    <section class="result-card keyword-card">
+
+        <h2>Keyword Analysis</h2>
+
+        <p>
+            Your resume has {{ keyword_analysis.total_words }} words.
+            These are its most important keywords, how often each one appears,
+            and its density (the share of all your words).
+        </p>
+
+        {% if keyword_analysis.keywords %}
+
+        <div class="keyword-list">
+            {% for item in keyword_analysis.keywords %}
+            <div class="keyword-row">
+
+                <div class="keyword-name">
+                    <strong>{{ item.keyword }}</strong>
+                    <span class="keyword-badge keyword-{{ item.status }}">
+                        {% if item.status == 'overused' %}⚠ Overused
+                        {% elif item.status == 'repeated' %}Repeated
+                        {% else %}Mentioned once{% endif %}
+                    </span>
+                </div>
+
+                <div class="keyword-bar-track">
+                    <div class="keyword-bar keyword-{{ item.status }}"
+                         style="width: {{ item.bar_width }}%"></div>
+                </div>
+
+                <div class="keyword-stats">
+                    {{ item.count }}× · {{ item.density }}%
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+
+        <ul class="keyword-legend">
+            <li><strong>Mentioned once</strong>: appears one time.</li>
+            <li><strong>Repeated</strong>: appears {{ keyword_analysis.rules.repeated_count }}
+                or more times. This shows it is a real strength.</li>
+            <li><strong>⚠ Overused</strong>: appears {{ keyword_analysis.rules.overused_count }}
+                or more times and is {{ keyword_analysis.rules.overused_density }}% or more of
+                all your words. It may look like keyword stuffing.</li>
+        </ul>
+
+        {% endif %}
+
+        <!-- Comparison with the job description -->
+        {% if keyword_analysis.job_match %}
+
+        <h3 class="keyword-subtitle">Match with the job description</h3>
+
+        {% if keyword_analysis.job_match.keyword_count %}
+
+            <div class="score-label">
+                <span>Job keywords found in your resume</span>
+                <strong>
+                    {{ keyword_analysis.job_match.matched|length }}
+                    / {{ keyword_analysis.job_match.keyword_count }}
+                    ({{ keyword_analysis.job_match.match_percent }}%)
+                </strong>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-fill"
+                     data-width="{{ keyword_analysis.job_match.match_percent }}"></div>
+            </div>
+
+            {% if keyword_analysis.job_match.matched %}
+            <p class="keyword-group-title">Found in your resume</p>
+            <div class="keyword-chips">
+                {% for item in keyword_analysis.job_match.matched %}
+                <span class="keyword-chip keyword-chip-match">
+                    ✓ {{ item.keyword }}
+                    <small>{{ item.resume_count }}× in resume</small>
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if keyword_analysis.job_match.missing %}
+            <p class="keyword-group-title">Missing from your resume</p>
+            <div class="keyword-chips">
+                {% for item in keyword_analysis.job_match.missing %}
+                <span class="keyword-chip keyword-chip-missing">
+                    ✗ {{ item.keyword }}
+                    <small>{{ item.job_count }}× in job</small>
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+        {% else %}
+            <p>No clear keywords were found in that job description. Try pasting the full text.</p>
+        {% endif %}
+
+        {% else %}
+
+        <p class="keyword-hint">
+            Tip: paste a job description on the upload page to see which of its
+            keywords your resume is missing.
+        </p>
+
+        {% endif %}
+
+        <h3 class="keyword-subtitle">What to do</h3>
+
+        {% for tip in keyword_analysis.tips %}
+            <div class="suggestion">✦ {{ tip }}</div>
+        {% endfor %}
+
+    </section>
+
+
     <!-- Suggestions -->
     <section class="result-card">
 
@@ -143,6 +260,31 @@
     </section>
 
 
+    <!-- Recommendations (kept separate from the original resume text) -->
+    <section class="result-card">
+
+        <h2>Resume Improvement Recommendations</h2>
+
+        <p>
+            Advice based on what we found in your resume. Examples use
+            [placeholders]: fill them in only with details that are true for you.
+        </p>
+
+        {% for block in recommendations %}
+
+            <h3 class="rec-title">{{ block.section }}</h3>
+
+            {% for item in block.tips %}
+                <div class="suggestion">
+                    {{ item.tip }}
+                    {% if item.example %}
+                        <code class="rec-example">{{ item.example }}</code>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+        {% else %}
+            <p>No major gaps found. Re-read your resume once to check it is accurate and up to date.</p>
     <!-- ATS Compatibility -->
     <section class="result-card">
 
@@ -366,7 +508,7 @@
         <h2>Extracted Resume Text</h2>
 
         <details>
-            <summary>View original PDF text</summary>
+            <summary>View extracted resume text</summary>
             <pre>{{ resume_text }}</pre>
         </details>
 

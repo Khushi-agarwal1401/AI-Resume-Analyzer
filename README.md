@@ -1,6 +1,6 @@
 # AI Resume Analyzer
 
-A small Flask web app that reads a PDF resume, detects the skills in it, gives a
+A small Flask web app that reads a PDF or DOCX resume, detects the skills in it, gives a
 section-wise resume score and suggests what could be improved.
 
 Built for beginners to read, run and contribute to. Part of
@@ -8,8 +8,10 @@ Built for beginners to read, run and contribute to. Part of
 
 ## What it does
 
-- Upload a resume as a PDF (max 10 MB)
-- Extracts the text from the PDF (`pypdf`)
+- Upload a resume as a PDF or DOCX file (max 10 MB)
+- Extracts the text from the file (`pypdf` for PDF, `python-docx` for DOCX)
+- Upload a resume as a PDF or DOCX (max 10 MB)
+- Extracts PDF text with `pypdf` and DOCX text with `python-docx`
 - Detects skills such as Python, SQL, Flask, React, Git and more
 - Gives a resume score with a breakdown (contact info, summary, skills,
   education, experience, projects, ...)
@@ -21,6 +23,7 @@ Built for beginners to read, run and contribute to. Part of
 - Python 3.9 or newer
 - [Flask](https://flask.palletsprojects.com/) for the web app
 - [pypdf](https://pypdf.readthedocs.io/) for reading PDFs
+- [python-docx](https://python-docx.readthedocs.io/) for reading DOCX files
 - HTML, CSS and JavaScript for the pages (`templates/`, `static/`)
 
 ## Project structure
@@ -29,9 +32,14 @@ Built for beginners to read, run and contribute to. Part of
 app.py                      Flask app: routes for upload and results
 analyzer/
   pdf_reader.py             Extracts text from a PDF
+  docx_reader.py            Extracts text from a DOCX
+  resume_extractor.py       Extracts text from PDF and DOCX files
+  pdf_reader.py             Backward-compatible PDF extraction wrapper
   skills_extractor.py       Finds skills in the text and gives suggestions
   resume_scorer.py          Calculates the resume score and breakdown
-  job_matcher.py            Job matching (not built yet, good place to contribute)
+  job_matcher.py            Extracts job skills and matches them to resumes
+  section_detector.py       Organizes resume text into named sections
+  ats_checker.py             Performs ATS-readiness analysis
   suggestions.py            Suggestion helpers
 templates/                  index.html (upload page), result.html (results page)
 static/                     style.css, script.js
@@ -55,7 +63,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The app opens at http://127.0.0.1:5000. Upload a PDF resume and check the result.
+The app opens at http://127.0.0.1:5000. Upload a PDF or DOCX resume and check the result.
 
 Please test with your own resume or a sample one. Do not upload other people's
 resumes to the repository.
@@ -73,7 +81,6 @@ contributors.
 
 ## Ideas to work on
 
-- Build the job matcher (`analyzer/job_matcher.py`)
 - Add more skills and better matching to the skill list
 - Improve the score and the suggestions
 - Better error pages instead of plain text messages

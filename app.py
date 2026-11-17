@@ -7,9 +7,13 @@ from flask import Flask, render_template, request
 from werkzeug.utils import secure_filename
 
 from analyzer.pdf_reader import extract_pdf_text
+from analyzer.docx_reader import extract_docx_text, DocxReadError
+from analyzer.resume_extractor import extract_resume_text
 from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
+from analyzer.suggestions import generate_recommendations
+from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 
@@ -18,6 +22,10 @@ app = Flask(__name__)
 
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
+
+ALLOWED_EXTENSIONS = {".pdf", ".docx"}
+# The optional job description is cut to this many characters
+MAX_JOB_DESCRIPTION_LENGTH = 20000
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
@@ -37,13 +45,23 @@ def analyze():
 
     file = request.files["resume"]
 
-    if file.filename == "":
+    if not file.filename:
         return "No file selected."
 
-    if not file.filename.lower().endswith(".pdf"):
-        return "Only PDF files are allowed."
+    extension = os.path.splitext(file.filename.lower())[1]
 
-    filename = secure_filename(file.filename)
+    if extension not in ALLOWED_EXTENSIONS:
+        return "Only PDF and DOCX files are allowed."
+
+    # Used in messages shown to the user: "PDF" or "DOCX"
+    file_type = extension[1:].upper()
+    original_filename = file.filename
+    extension = os.path.splitext(original_filename)[1].lower()
+
+    if extension not in {".pdf", ".docx"}:
+        return "Only PDF and DOCX files are allowed."
+
+    filename = secure_filename(original_filename)
 
     if not filename:
         return "Invalid filename."
@@ -56,14 +74,27 @@ def analyze():
     )
 
     try:
-        # Save PDF
+        # Save the uploaded resume
         file.save(filepath)
 
-        # Extract PDF text
-        resume_text = extract_pdf_text(filepath)
+        # Extract text (the rest of the analysis is the same for both types)
+        if extension == ".docx":
+            resume_text = extract_docx_text(filepath)
+        else:
+            resume_text = extract_pdf_text(filepath)
 
         if not resume_text.strip():
-            return "No readable text found in this PDF."
+            return f"No readable text found in this {file_type}."
+        # Save the uploaded resume.
+        file.save(filepath)
+
+        # Extract text using the centralized format dispatcher.
+        resume_text = extract_resume_text(filepath)
+
+        if not resume_text.strip():
+            if extension == ".pdf":
+                return "No readable text found in this PDF."
+            return "No readable text found in this DOCX."
 
         # Detect and organize sections
         resume_sections = extract_sections(resume_text)
@@ -80,6 +111,13 @@ def analyze():
         resume_score = score_data["score"]
         score_breakdown = score_data["breakdown"]
 
+        # Section-wise improvement recommendations
+        recommendations = generate_recommendations(resume_text)
+        # Keyword analysis (optional job description from the form)
+        job_description = request.form.get("job_description", "")
+        job_description = job_description[:MAX_JOB_DESCRIPTION_LENGTH]
+
+        keyword_analysis = analyze_keywords(resume_text, job_description)
         # ATS Compatibility Analysis
         ats_result = analyze_ats(resume_text, found_skills)
 
@@ -111,18 +149,37 @@ def analyze():
             resume_text=resume_text,
             resume_score=resume_score,
             score_breakdown=score_breakdown,
+            recommendations=recommendations
+            keyword_analysis=keyword_analysis
             ats_result=ats_result,
             resume_sections=resume_sections,
             job_match=job_match
         )
 
+    except DocxReadError as error:
+        # The message was written for the user, so it is safe to show
+        return str(error)
+
     except Exception as error:
         print("Analysis Error:", error)
-        return "Unable to analyze this PDF. Please try another PDF."
+        return (
+            f"Unable to analyze this {file_type}. "
+            f"Please try another {file_type}."
+        )
+        if extension == ".pdf":
+            return "Unable to analyze this PDF. Please try another PDF."
+        return "Unable to analyze this DOCX. Please try another DOCX."
 
     finally:
         if filepath and os.path.exists(filepath):
-            os.remove(filepath)
+            try:
+                os.remove(filepath)
+            except OSError as cleanup_error:
+                print("Cleanup Error:", cleanup_error)
+        try:
+            file.close()
+        except (OSError, ValueError) as cleanup_error:
+            print("Upload Stream Cleanup Error:", cleanup_error)
 
 
 if __name__ == "__main__":

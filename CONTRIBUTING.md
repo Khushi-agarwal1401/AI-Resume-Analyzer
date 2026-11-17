@@ -32,7 +32,7 @@ change without discussing it.
    ```
 4. Run the app: `python app.py` and open http://127.0.0.1:5000
 
-Requirements: Python 3.9+, Flask, pypdf.
+Requirements: Python 3.9+, Flask, pypdf, python-docx.
 
 ## 3. Make your change
 
