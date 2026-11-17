@@ -115,7 +115,12 @@ def analyze():
 
         # Job Description Matching
         job_description = request.form.get("job_description", "")
-        job_match = match_resume_to_job(found_skills, job_description)
+        job_match = match_resume_to_job(
+            found_skills,
+            job_description,
+            resume_text=resume_text,
+            resume_sections=resume_sections
+        )
 
         # Results for the PDF report (sent back by the Download button)
         report = {
@@ -132,6 +137,8 @@ def analyze():
         print("SCORE BREAKDOWN:", score_breakdown)
         if job_match.get("has_job_description"):
             print("JOB MATCH SCORE:", job_match.get("match_percentage"))
+            if job_match.get("semantic_match_percentage") is not None:
+                print("SEMANTIC SIMILARITY:", job_match.get("semantic_match_percentage"))
         print("=====================================\n")
 
         # Display Results
