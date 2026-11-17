@@ -1,3 +1,4 @@
 Flask
 pypdf
 python-docx
+python-docx

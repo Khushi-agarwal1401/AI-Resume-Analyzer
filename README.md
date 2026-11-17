@@ -1,6 +1,6 @@
 # AI Resume Analyzer
 
-A small Flask web app that reads a PDF resume, detects the skills in it, gives a
+A small Flask web app that reads a PDF or DOCX resume, detects the skills in it, gives a
 section-wise resume score and suggests what could be improved.
 
 Built for beginners to read, run and contribute to. Part of
@@ -8,6 +8,8 @@ Built for beginners to read, run and contribute to. Part of
 
 ## What it does
 
+- Upload a resume as a PDF or DOCX file (max 10 MB)
+- Extracts the text from the file (`pypdf` for PDF, `python-docx` for DOCX)
 - Upload a resume as a PDF or DOCX (max 10 MB)
 - Extracts PDF text with `pypdf` and DOCX text with `python-docx`
 - Detects skills such as Python, SQL, Flask, React, Git and more
@@ -29,6 +31,8 @@ Built for beginners to read, run and contribute to. Part of
 ```
 app.py                      Flask app: routes for upload and results
 analyzer/
+  pdf_reader.py             Extracts text from a PDF
+  docx_reader.py            Extracts text from a DOCX
   resume_extractor.py       Extracts text from PDF and DOCX files
   pdf_reader.py             Backward-compatible PDF extraction wrapper
   skills_extractor.py       Finds skills in the text and gives suggestions
