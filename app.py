@@ -24,6 +24,7 @@ from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report
+from analyzer.skill_gap_analyzer import analyze_skill_gap, get_supported_roles
 from analyzer.roadmap_generator import generate_roadmap, calculate_roadmap_progress
 from analyzer.temp_manager import (
     DEFAULT_TEMP_DIR,
@@ -51,7 +52,7 @@ cleanup_stale_temp_files(app.config["UPLOAD_FOLDER"])
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("index.html", supported_roles=get_supported_roles())
 
 
 @app.route("/analyze", methods=["POST"])
@@ -68,6 +69,7 @@ def analyze():
         return "No file selected."
 
     original_filename = file.filename
+    extension = os.path.splitext(original_filename.lower())[1]
     extension = os.path.splitext(original_filename)[1].lower()
 
     if extension not in ALLOWED_EXTENSIONS:
@@ -137,6 +139,9 @@ def analyze():
             resume_sections=resume_sections
         )
 
+        # Personalized Skill Gap Analysis against selected or best-matching career role
+        target_role = request.form.get("target_role", "").strip() or None
+        skill_gap = analyze_skill_gap(found_skills, target_role=target_role)
         # Generate personalized 3-phase improvement roadmap from actual analysis results
         roadmap = generate_roadmap(
             resume_score=resume_score,
@@ -157,6 +162,7 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "job_match": job_match,
+            "skill_gap": skill_gap,
             "roadmap": roadmap,
         }
 
@@ -164,6 +170,8 @@ def analyze():
         print("DETECTED SKILLS:", found_skills)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
+        print("TARGET ROLE:", skill_gap.get("target_role"))
+        print("SKILL GAP MATCH:", f"{skill_gap.get('match_percentage')}% ({skill_gap.get('readiness_level')})")
         print("ROADMAP TASKS:", roadmap.get("total_tasks"))
         if job_match.get("has_job_description"):
             print("JOB MATCH SCORE:", job_match.get("match_percentage"))
@@ -189,6 +197,9 @@ def analyze():
             ats_result=ats_result,
             resume_sections=resume_sections,
             job_match=job_match,
+            skill_gap=skill_gap,
+            supported_roles=get_supported_roles(),
+            selected_role=target_role,
             roadmap=roadmap,
             report_json=json.dumps(report)
         )

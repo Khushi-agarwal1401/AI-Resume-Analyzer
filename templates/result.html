@@ -212,6 +212,145 @@
     </section>
 
 
+    <!-- Personalized Skill Gap Analysis -->
+    {% if skill_gap %}
+    <section class="result-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <h2>🎯 Personalized Skill Gap Analysis</h2>
+            <span class="tag" style="background: var(--surface-soft, #f3f0fc); color: var(--accent, #7054d9); font-weight: 600;">
+                Role: {{ skill_gap.target_role }} {% if skill_gap.is_auto_detected_role %}(Auto-Detected){% endif %}
+            </span>
+        </div>
+
+        <p class="ats-note" style="margin-top: 8px;">{{ skill_gap.summary }}</p>
+
+        <p class="ats-rating" style="margin-top: 12px;">
+            <strong>{{ skill_gap.match_percentage }}% Role Readiness</strong>
+            &middot; {{ skill_gap.total_matching }} of {{ skill_gap.total_required }} Skills Matched
+            &middot; <span style="color: var(--accent, #7054d9); font-weight: 600;">{{ skill_gap.readiness_level }}</span>
+        </p>
+
+        <div class="score-row" style="margin-top: 10px;">
+            <div class="score-label">
+                <span>{{ skill_gap.target_role }} Requirements Alignment</span>
+                <strong>{{ skill_gap.match_percentage }}%</strong>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" data-width="{{ skill_gap.match_percentage }}"></div>
+            </div>
+        </div>
+
+        <!-- Matching Skills -->
+        <h3 class="ats-subheading" style="margin-top: 20px;">
+            ✓ Matching Skills ({{ skill_gap.total_matching }})
+        </h3>
+        {% if skill_gap.matching_skills %}
+            <div class="skill-list" style="margin-top: 8px;">
+                {% for item in skill_gap.matching_skills %}
+                    <span class="skill-tag" style="background: rgba(34, 197, 94, 0.12); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3);" title="{{ item.reason }}">
+                        ✓ {{ item.skill }} <small style="opacity: 0.85;">({{ item.priority }})</small>
+                    </span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="ats-note">No matching skills detected for this role yet. Begin with the high-priority skills below!</p>
+        {% endif %}
+
+        <!-- Identified Skill Gaps -->
+        <h3 class="ats-subheading" style="margin-top: 22px;">
+            ✗ Identified Skill Gaps ({{ skill_gap.total_missing }})
+        </h3>
+        {% if skill_gap.missing_skills %}
+            <div class="skill-list" style="margin-top: 8px;">
+                {% for item in skill_gap.missing_skills %}
+                    {% if item.priority == 'High' %}
+                        <span class="skill-tag" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3);" title="{{ item.reason }}">
+                            ✗ {{ item.skill }} <small style="font-weight: 600;">(Core/High)</small>
+                        </span>
+                    {% elif item.priority == 'Medium' %}
+                        <span class="skill-tag" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);" title="{{ item.reason }}">
+                            ⚠ {{ item.skill }} <small>(Important)</small>
+                        </span>
+                    {% else %}
+                        <span class="skill-tag" style="background: var(--surface-soft, #f4f4f7); color: var(--muted, #6b7280); border: 1px solid var(--border, #e5e7eb);" title="{{ item.reason }}">
+                            + {{ item.skill }} <small>(Bonus)</small>
+                        </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="ats-note" style="color: #16a34a; font-weight: 600;">🎉 Outstanding! You meet all essential and recommended skills for {{ skill_gap.target_role }}.</p>
+        {% endif %}
+
+        <!-- Prioritized Learning Recommendations -->
+        {% if skill_gap.learning_recommendations %}
+        <h3 class="ats-subheading" style="margin-top: 24px;">
+            📚 Prioritized Learning Path & Rationale
+        </h3>
+        <p class="ats-note" style="font-size: 13px; margin-bottom: 12px;">
+            Skills are prioritized by market demand and architectural importance for {{ skill_gap.target_role }}:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for item in skill_gap.learning_recommendations %}
+            <div style="padding: 12px 14px; background: var(--surface-soft, #faf9fe); border-radius: 8px; border-left: 3px solid {% if item.priority == 'High' %}#dc2626{% elif item.priority == 'Medium' %}#d97706{% else %}#7054d9{% endif %};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <strong style="color: var(--heading, #1f1d2b); font-size: 14px;">{{ item.skill }} <span style="font-weight: normal; font-size: 12px; color: var(--muted, #6b7280);">({{ item.category }})</span></strong>
+                    <span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; {% if item.priority == 'High' %}background: rgba(239, 68, 68, 0.15); color: #dc2626;{% elif item.priority == 'Medium' %}background: rgba(245, 158, 11, 0.15); color: #d97706;{% else %}background: rgba(112, 84, 217, 0.15); color: #7054d9;{% endif %}">
+                        {{ item.priority }} Priority
+                    </span>
+                </div>
+                <p style="font-size: 13px; color: var(--text, #374151); line-height: 1.5; margin: 0 0 4px 0;">
+                    <strong>Why it's needed:</strong> {{ item.reason }}
+                </p>
+                {% if item.learning_tip %}
+                <p style="font-size: 12px; color: var(--accent-text, #7054d9); line-height: 1.4; margin: 0;">
+                    💡 <em>Action Plan: {{ item.learning_tip }}</em>
+                </p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Role Comparison Table / Accordion -->
+        {% if skill_gap.all_roles_summary %}
+        <details style="margin-top: 22px;">
+            <summary style="font-size: 13px; font-weight: 600; color: var(--accent-text, #7054d9); cursor: pointer;">
+                🔍 View Your Readiness Across Other Tech Roles
+            </summary>
+            <div style="margin-top: 12px; overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border, #e5e7eb); text-align: left;">
+                            <th style="padding: 8px 10px;">Role</th>
+                            <th style="padding: 8px 10px;">Matched Skills</th>
+                            <th style="padding: 8px 10px;">Readiness</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for role_stat in skill_gap.all_roles_summary %}
+                        <tr style="border-bottom: 1px solid var(--border, #f3f4f6); {% if role_stat.is_selected %}background: rgba(112, 84, 217, 0.08); font-weight: 600;{% endif %}">
+                            <td style="padding: 8px 10px;">{{ role_stat.role }} {% if role_stat.is_selected %}⭐{% endif %}</td>
+                            <td style="padding: 8px 10px;">{{ role_stat.matching_count }} / {{ role_stat.total_count }}</td>
+                            <td style="padding: 8px 10px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="progress-track" style="flex: 1; height: 6px; margin: 0;">
+                                        <div class="progress-fill" data-width="{{ role_stat.match_percentage }}"></div>
+                                    </div>
+                                    <span>{{ role_stat.match_percentage }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        {% endif %}
+    </section>
+    {% endif %}
+
+
     <!-- Keyword Analysis -->
     <section class="result-card keyword-card">
 
