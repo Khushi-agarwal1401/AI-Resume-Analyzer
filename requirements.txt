@@ -3,3 +3,4 @@ pypdf
 sentence-transformers
 python-docx
 python-docx
+fpdf2
