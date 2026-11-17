@@ -84,6 +84,12 @@ def build_report(data):
                     f"{match.get('total_matching', 0)} of "
                     f"{match.get('total_required', 0)} required skills found.")
         _write(pdf, "Matching skills: " + (", ".join(match.get("matching_skills", [])) or "None"))
+        if match.get("semantically_related_skills"):
+            semantic_items = [
+                f"{s['required_skill']} (~ {s['matched_skill']}, {s.get('similarity', 0)}%)"
+                for s in match["semantically_related_skills"]
+            ]
+            _write(pdf, "Semantically related skills: " + ", ".join(semantic_items))
         _write(pdf, "Missing skills: " + (", ".join(match.get("missing_skills", [])) or "None"))
 
     pdf.ln(8)

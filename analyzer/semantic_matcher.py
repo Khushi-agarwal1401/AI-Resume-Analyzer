@@ -7,7 +7,7 @@ and handle embedding model errors gracefully.
 
 import logging
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 try:
     import numpy as np
 except ImportError:
@@ -17,7 +17,30 @@ from analyzer.nlp.base import BaseNLPModel
 
 logger = logging.getLogger(__name__)
 
-# Singleton cache for the embedding model
+# Domain skill clusters for semantic relation priors (especially when deep models are unavailable)
+RELATED_SKILL_CLUSTERS: List[Set[str]] = [
+    {"machine learning", "deep learning", "artificial intelligence", "nlp", "computer vision", "tensorflow", "pytorch", "scikit-learn"},
+    {"sql", "postgresql", "mysql", "sqlite", "oracle", "database"},
+    {"docker", "kubernetes", "containerization"},
+    {"aws", "gcp", "azure", "cloud"},
+    {"react", "next.js", "vue", "angular", "frontend"},
+    {"node.js", "express", "backend", "fastapi", "flask", "django", "spring boot"},
+    {"html", "css", "tailwind css", "bootstrap"},
+    {"ci/cd", "jenkins", "gitlab", "github actions"},
+    {"git", "github", "gitlab"},
+]
+
+
+def _domain_semantic_prior(skill1: str, skill2: str) -> float:
+    """Return prior similarity between two skills based on recognized domain clusters."""
+    s1 = skill1.strip().lower()
+    s2 = skill2.strip().lower()
+    if s1 == s2:
+        return 1.0
+    for cluster in RELATED_SKILL_CLUSTERS:
+        if s1 in cluster and s2 in cluster:
+            return 0.85
+    return 0.0
 _MODEL = None
 _MODEL_LOAD_ATTEMPTED = False
 _MODEL_LOAD_ERROR: Optional[str] = None
@@ -312,8 +335,11 @@ def identify_semantically_related_skills(
 
             for cand_name, cand_emb in zip(valid_candidates, candidate_embeddings):
                 sim = compute_cosine_similarity(req_emb, cand_emb)
-                if sim > best_sim:
-                    best_sim = sim
+                # Combine embedding similarity with recognized domain priors
+                prior = _domain_semantic_prior(req, cand_name)
+                combined_sim = max(float(sim), prior)
+                if combined_sim > best_sim:
+                    best_sim = combined_sim
                     best_cand = cand_name
 
             if best_sim >= threshold and best_cand:
