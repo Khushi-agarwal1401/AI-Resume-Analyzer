@@ -333,6 +333,8 @@
         {% endfor %}
 
     </section>
+
+
     <!-- ATS Compatibility -->
     <section class="result-card">
 
@@ -565,6 +567,11 @@
 
     <div class="result-footer">
         <a href="/" class="hero-btn">Analyze Another Resume →</a>
+
+        <form action="/download-report" method="post">
+            <input type="hidden" name="report" value="{{ report_json }}">
+            <button type="submit" class="hero-btn">⬇ Download PDF Report</button>
+        </form>
     </div>
 
 </div>

@@ -1,3 +1,5 @@
+import io
+import json
 import os
 import uuid
 import threading
@@ -5,10 +7,11 @@ import webbrowser
 
 from flask import Flask, render_template, request
 from docx.opc.exceptions import PackageNotFoundError
+from flask import Flask, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
 from analyzer.pdf_reader import extract_pdf_text
-from analyzer.docx_reader import extract_docx_text, DocxReadError
+from analyzer.docx_reader import DocxReadError, check_docx_file
 from analyzer.resume_extractor import extract_resume_text
 from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
@@ -17,6 +20,7 @@ from analyzer.suggestions import generate_recommendations
 from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
+from analyzer.report_generator import build_report
 
 
 app = Flask(__name__)
@@ -76,6 +80,7 @@ def analyze():
 
     try:
         # Save the uploaded resume
+        # Save the uploaded resume.
         file.save(filepath)
 
         # Extract text using the centralized format dispatcher.
@@ -122,6 +127,15 @@ def analyze():
             resume_sections=resume_sections
         )
 
+        # Results for the PDF report (sent back by the Download button)
+        report = {
+            "score": resume_score,
+            "breakdown": score_breakdown,
+            "skills": found_skills,
+            "suggestions": suggestions,
+            "job_match": job_match,
+        }
+
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("RESUME SCORE:", resume_score)
@@ -149,7 +163,8 @@ def analyze():
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
             resume_sections=resume_sections,
-            job_match=job_match
+            job_match=job_match,
+            report_json=json.dumps(report)
         )
 
     except PackageNotFoundError:
@@ -161,6 +176,11 @@ def analyze():
 
     except Exception as error:
         print("Analysis Error:", error)
+        if extension == ".docx":
+            try:
+                check_docx_file(filepath)  # explains fake or oversized DOCX files
+            except DocxReadError as docx_error:
+                return str(docx_error)
         return (
             f"Unable to analyze this {file_type}. "
             f"Please try another {file_type}."
@@ -176,6 +196,23 @@ def analyze():
             file.close()
         except (OSError, ValueError) as cleanup_error:
             print("Upload Stream Cleanup Error:", cleanup_error)
+
+
+@app.route("/download-report", methods=["POST"])
+def download_report():
+
+    try:
+        pdf_bytes = build_report(json.loads(request.form["report"]))
+    except Exception as error:
+        print("Report Error:", error)
+        return "Unable to create the report. Please analyze your resume again.", 400
+
+    return send_file(
+        io.BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name="resume-analysis-report.pdf"
+    )
 
 
 if __name__ == "__main__":
