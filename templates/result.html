@@ -260,6 +260,161 @@
     </section>
 
 
+    <!-- ATS Compatibility -->
+    <section class="result-card">
+
+        <h2>ATS Compatibility Analysis</h2>
+
+        <p class="ats-note">{{ ats_result.disclaimer }}</p>
+
+        <p class="ats-rating">
+            <strong>{{ ats_result.score }} / 100</strong>
+            &middot; {{ ats_result.rating }}
+        </p>
+
+        {% for category, item in ats_result.breakdown.items() %}
+
+        <div class="score-row">
+
+            <div class="score-label">
+                <span>{{ category }}</span>
+                <strong>{{ item.score }} / {{ item.max }}</strong>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-fill"
+                     data-width="{{ (item.score / item.max * 100)|round(1) }}">
+                </div>
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+        <h3 class="ats-subheading">Missing Sections</h3>
+
+        {% if ats_result.missing_sections %}
+            <div class="skill-list">
+                {% for section in ats_result.missing_sections %}
+                    <span class="skill-tag">
+                        {{ section.name }}{% if section.required %} (important){% endif %}
+                    </span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="ats-note">All common resume sections were found.</p>
+        {% endif %}
+
+        <h3 class="ats-subheading">Keyword Usage</h3>
+
+        <p class="ats-note">
+            {{ ats_result.keywords.skills_count }} skills detected,
+            {{ ats_result.keywords.action_verbs|length }} action verbs used,
+            {{ ats_result.keywords.metric_count }} measurable results found.
+        </p>
+
+        <h3 class="ats-subheading">Recommendations</h3>
+
+        {% for tip in ats_result.recommendations %}
+            <div class="suggestion">
+                ✦ {{ tip }}
+            </div>
+        {% else %}
+            <div class="suggestion">
+                ✦ No major issues found. Keep your resume simple and up to date.
+            </div>
+        {% endfor %}
+
+    </section>
+
+
+    <!-- Job Description Matching -->
+    {% if job_match and job_match.has_job_description %}
+    <section class="result-card">
+        <h2>Job Description Match</h2>
+
+        <p class="ats-note">{{ job_match.explanation }}</p>
+
+        <p class="ats-rating">
+            <strong>{{ job_match.match_percentage }}% Match</strong>
+            &middot; {{ job_match.total_matching }} of {{ job_match.total_required }} Required Skills
+        </p>
+
+        <div class="score-row">
+            <div class="score-label">
+                <span>Skill Match Rate</span>
+                <strong>{{ job_match.total_matching }} / {{ job_match.total_required }}</strong>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-fill"
+                     data-width="{{ job_match.match_percentage }}">
+                </div>
+            </div>
+        </div>
+
+        <h3 class="ats-subheading">Matching Skills ({{ job_match.matching_skills|length }})</h3>
+        {% if job_match.matching_skills %}
+            <div class="skill-list">
+                {% for skill in job_match.matching_skills %}
+                    <span class="skill-tag">✓ {{ skill }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="ats-note">No matching skills detected from the job description requirements.</p>
+        {% endif %}
+
+        <h3 class="ats-subheading">Missing Skills ({{ job_match.missing_skills|length }})</h3>
+        {% if job_match.missing_skills %}
+            <div class="skill-list">
+                {% for skill in job_match.missing_skills %}
+                    <span class="skill-tag missing">✗ {{ skill }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            {% if job_match.total_required > 0 %}
+                <p class="ats-note">Great job! Your resume covers all detected skills for this role.</p>
+            {% else %}
+                <p class="ats-note">No specific technical skill requirements were found in the job description.</p>
+            {% endif %}
+        {% endif %}
+    </section>
+    {% endif %}
+
+
+    <!-- Detected Resume Sections -->
+    {% if resume_sections %}
+    <section class="result-card">
+        <h2>Detected Resume Sections</h2>
+        <p>Extracted content organized by section:</p>
+
+        {% set section_titles = {
+            'contact_info': 'Contact Information',
+            'summary': 'Professional Summary',
+            'objective': 'Objective',
+            'education': 'Education',
+            'experience': 'Work Experience',
+            'skills': 'Skills',
+            'projects': 'Projects',
+            'certifications': 'Certifications',
+            'achievements': 'Achievements',
+            'languages': 'Languages',
+            'interests': 'Interests',
+            'publications': 'Publications',
+            'internships': 'Internships'
+        } %}
+
+        {% for sec_key, title in section_titles.items() %}
+            {% if resume_sections[sec_key] %}
+                <details style="margin-bottom: 12px;">
+                    <summary><strong>{{ title }}</strong></summary>
+                    <pre>{{ resume_sections[sec_key] }}</pre>
+                </details>
+            {% endif %}
+        {% endfor %}
+    </section>
+    {% endif %}
+
     <!-- Original Text -->
     <section class="result-card">
 

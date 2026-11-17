@@ -1,6 +1,8 @@
 
 from pypdf import PdfReader
 
+from analyzer.section_detector import extract_sections
+
 
 def extract_pdf_text(filepath):
 
@@ -16,4 +18,10 @@ def extract_pdf_text(filepath):
             text += page_text + "\n"
 
     return text
+
+
+def extract_pdf_sections(filepath):
+    """Extract text from a PDF and return organized resume sections."""
+    text = extract_pdf_text(filepath)
+    return extract_sections(text)
 

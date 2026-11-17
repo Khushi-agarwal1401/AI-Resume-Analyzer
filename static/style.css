@@ -812,12 +812,17 @@ body.dark-mode {
     color: #aaa0c2;
 }
 
+/* ATS Compatibility */
+
+.ats-rating {
+    margin-bottom: 18px;
+    font-size: 15px;
+}
 
 /* =====================================
    KEYWORD ANALYSIS (issue #17)
    Colors are variables on .keyword-card and .job-input. Dark values are
    given for both theme styles: body.dark-mode and html[data-theme="dark"].
-===================================== */
 
 .keyword-card,
 .job-input {
@@ -1095,4 +1100,35 @@ body.dark-mode {
         grid-column: 1 / -1;
         order: 3;
     }
+}
+.ats-subheading {
+    margin: 22px 0 10px;
+    font-size: 16px;
+}
+
+.ats-note {
+    color: #89869d;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+/* Job Description Matching */
+
+.dark-mode .job-description-box textarea {
+    background: #353047;
+    color: #eee9ff;
+    border-color: #554a72 !important;
+}
+
+.skill-tag.missing {
+    background: #fff0f0;
+    color: #d94545;
+    border-color: #ffd4d4;
+}
+
+.dark-mode .skill-tag.missing {
+    background: #4a2732;
+    color: #ff9b9b;
+    border-color: #6d3a49;
 }
