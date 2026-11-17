@@ -8,7 +8,10 @@ and handle embedding model errors gracefully.
 import logging
 import os
 from typing import Dict, List, Optional, Tuple
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +95,7 @@ def reset_embedding_model() -> None:
     _MODEL_LOAD_ERROR = None
 
 
-def compute_cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+def compute_cosine_similarity(vec1, vec2) -> float:
     """Compute cosine similarity between two 1D embedding vectors.
 
     Args:
@@ -105,18 +108,29 @@ def compute_cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
     if vec1 is None or vec2 is None:
         return 0.0
 
-    v1 = np.asarray(vec1, dtype=np.float32).flatten()
-    v2 = np.asarray(vec2, dtype=np.float32).flatten()
+    if np is not None:
+        v1 = np.asarray(vec1, dtype=np.float32).flatten()
+        v2 = np.asarray(vec2, dtype=np.float32).flatten()
 
-    norm1 = np.linalg.norm(v1)
-    norm2 = np.linalg.norm(v2)
+        norm1 = np.linalg.norm(v1)
+        norm2 = np.linalg.norm(v2)
 
-    if norm1 == 0.0 or norm2 == 0.0:
+        if norm1 == 0.0 or norm2 == 0.0:
+            return 0.0
+
+        similarity = float(np.dot(v1, v2) / (norm1 * norm2))
+        return max(0.0, min(1.0, similarity))
+
+    import math
+    try:
+        dot = sum(float(a) * float(b) for a, b in zip(vec1, vec2))
+        norm1 = math.sqrt(sum(float(a) * float(a) for a in vec1))
+        norm2 = math.sqrt(sum(float(b) * float(b) for b in vec2))
+        if norm1 == 0.0 or norm2 == 0.0:
+            return 0.0
+        return max(0.0, min(1.0, dot / (norm1 * norm2)))
+    except Exception:
         return 0.0
-
-    similarity = float(np.dot(v1, v2) / (norm1 * norm2))
-    # Clamp to [0.0, 1.0] for normalized display
-    return max(0.0, min(1.0, similarity))
 
 
 def generate_embedding(text: Optional[str], model=None) -> Optional[np.ndarray]:

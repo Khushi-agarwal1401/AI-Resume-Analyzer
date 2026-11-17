@@ -7,6 +7,8 @@ import webbrowser
 
 from flask import Flask, render_template, request
 from docx.opc.exceptions import PackageNotFoundError
+from werkzeug.utils import secure_filename
+
 from flask import Flask, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
@@ -21,18 +23,27 @@ from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report
+from analyzer.temp_manager import (
+    DEFAULT_TEMP_DIR,
+    cleanup_stale_temp_files,
+    generate_secure_filename,
+    get_temp_upload_dir,
+    remove_temp_file,
+)
 
 
 app = Flask(__name__)
 
-app.config["UPLOAD_FOLDER"] = "uploads"
+app.config["UPLOAD_FOLDER"] = os.environ.get("RESUME_UPLOAD_FOLDER", DEFAULT_TEMP_DIR)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 # The optional job description is cut to this many characters
 MAX_JOB_DESCRIPTION_LENGTH = 20000
 
-os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+# Ensure dedicated temporary upload directory exists with restricted permissions
+get_temp_upload_dir(app.config["UPLOAD_FOLDER"])
+cleanup_stale_temp_files(app.config["UPLOAD_FOLDER"])
 
 
 @app.route("/")
@@ -53,25 +64,21 @@ def analyze():
     if not file.filename:
         return "No file selected."
 
-    extension = os.path.splitext(file.filename.lower())[1]
+    original_filename = file.filename
+    extension = os.path.splitext(original_filename)[1].lower()
 
     if extension not in ALLOWED_EXTENSIONS:
         return "Only PDF and DOCX files are allowed."
 
     # Used in messages shown to the user: "PDF" or "DOCX"
     file_type = extension[1:].upper()
-    original_filename = file.filename
-    extension = os.path.splitext(original_filename)[1].lower()
-
-    if extension not in {".pdf", ".docx"}:
-        return "Only PDF and DOCX files are allowed."
 
     filename = secure_filename(original_filename)
 
     if not filename:
         return "Invalid filename."
 
-    unique_filename = f"{uuid.uuid4().hex}_{filename}"
+    unique_filename = generate_secure_filename(extension)
 
     filepath = os.path.join(
         app.config["UPLOAD_FOLDER"],
@@ -173,6 +180,8 @@ def analyze():
     except DocxReadError as error:
         # The message was written for the user, so it is safe to show
         return str(error)
+        # A file named .docx that is not a real Word document
+        return "This file is not a valid DOCX document."
 
     except Exception as error:
         print("Analysis Error:", error)
@@ -187,15 +196,12 @@ def analyze():
         )
 
     finally:
-        if filepath and os.path.exists(filepath):
-            try:
-                os.remove(filepath)
-            except OSError as cleanup_error:
-                print("Cleanup Error:", cleanup_error)
+        if filepath:
+            remove_temp_file(filepath)
         try:
             file.close()
-        except (OSError, ValueError) as cleanup_error:
-            print("Upload Stream Cleanup Error:", cleanup_error)
+        except (OSError, ValueError):
+            pass
 
 
 @app.route("/download-report", methods=["POST"])
