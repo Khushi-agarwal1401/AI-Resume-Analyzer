@@ -845,8 +845,20 @@ body.dark-mode {
     border-color: #ffd4d4;
 }
 
+.skill-tag.semantic {
+    background: #f0f7ff;
+    color: #0284c7;
+    border-color: #bae6fd;
+}
+
 .dark-mode .skill-tag.missing {
     background: #4a2732;
     color: #ff9b9b;
     border-color: #6d3a49;
+}
+
+.dark-mode .skill-tag.semantic {
+    background: #17324d;
+    color: #7dd3fc;
+    border-color: #2b5573;
 }
