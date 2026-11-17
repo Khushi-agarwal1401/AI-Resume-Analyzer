@@ -5,6 +5,10 @@ import uuid
 import threading
 import webbrowser
 
+from flask import Flask, render_template, request
+from docx.opc.exceptions import PackageNotFoundError
+from werkzeug.utils import secure_filename
+
 from flask import Flask, render_template, request, send_file
 from werkzeug.utils import secure_filename
 
@@ -51,18 +55,14 @@ def analyze():
     if not file.filename:
         return "No file selected."
 
-    extension = os.path.splitext(file.filename.lower())[1]
+    original_filename = file.filename
+    extension = os.path.splitext(original_filename)[1].lower()
 
     if extension not in ALLOWED_EXTENSIONS:
         return "Only PDF and DOCX files are allowed."
 
     # Used in messages shown to the user: "PDF" or "DOCX"
     file_type = extension[1:].upper()
-    original_filename = file.filename
-    extension = os.path.splitext(original_filename)[1].lower()
-
-    if extension not in {".pdf", ".docx"}:
-        return "Only PDF and DOCX files are allowed."
 
     filename = secure_filename(original_filename)
 
@@ -84,9 +84,7 @@ def analyze():
         resume_text = extract_resume_text(filepath)
 
         if not resume_text.strip():
-            if extension == ".pdf":
-                return "No readable text found in this PDF."
-            return "No readable text found in this DOCX."
+            return f"No readable text found in this {file_type}."
 
         # Detect and organize sections
         resume_sections = extract_sections(resume_text)
@@ -158,9 +156,9 @@ def analyze():
             report_json=json.dumps(report)
         )
 
-    except DocxReadError as error:
-        # The message was written for the user, so it is safe to show
-        return str(error)
+    except PackageNotFoundError:
+        # A file named .docx that is not a real Word document
+        return "This file is not a valid DOCX document."
 
     except Exception as error:
         print("Analysis Error:", error)
@@ -173,9 +171,6 @@ def analyze():
             f"Unable to analyze this {file_type}. "
             f"Please try another {file_type}."
         )
-        if extension == ".pdf":
-            return "Unable to analyze this PDF. Please try another PDF."
-        return "Unable to analyze this DOCX. Please try another DOCX."
 
     finally:
         if filepath and os.path.exists(filepath):
