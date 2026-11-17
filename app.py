@@ -4,6 +4,7 @@ import threading
 import webbrowser
 
 from flask import Flask, render_template, request
+from docx.opc.exceptions import PackageNotFoundError
 from werkzeug.utils import secure_filename
 
 from analyzer.pdf_reader import extract_pdf_text
@@ -77,24 +78,11 @@ def analyze():
         # Save the uploaded resume
         file.save(filepath)
 
-        # Extract text (the rest of the analysis is the same for both types)
-        if extension == ".docx":
-            resume_text = extract_docx_text(filepath)
-        else:
-            resume_text = extract_pdf_text(filepath)
-
-        if not resume_text.strip():
-            return f"No readable text found in this {file_type}."
-        # Save the uploaded resume.
-        file.save(filepath)
-
         # Extract text using the centralized format dispatcher.
         resume_text = extract_resume_text(filepath)
 
         if not resume_text.strip():
-            if extension == ".pdf":
-                return "No readable text found in this PDF."
-            return "No readable text found in this DOCX."
+            return f"No readable text found in this {file_type}."
 
         # Detect and organize sections
         resume_sections = extract_sections(resume_text)
@@ -110,6 +98,10 @@ def analyze():
 
         resume_score = score_data["score"]
         score_breakdown = score_data["breakdown"]
+        category_details = score_data.get("category_details", {})
+        overall_explanation = score_data.get("overall_explanation", "")
+        scoring_formula = score_data.get("scoring_formula", "")
+        improvement_areas = score_data.get("improvement_areas", [])
 
         # Section-wise improvement recommendations
         recommendations = generate_recommendations(resume_text)
@@ -149,12 +141,19 @@ def analyze():
             resume_text=resume_text,
             resume_score=resume_score,
             score_breakdown=score_breakdown,
-            recommendations=recommendations
-            keyword_analysis=keyword_analysis
+            category_details=category_details,
+            overall_explanation=overall_explanation,
+            scoring_formula=scoring_formula,
+            improvement_areas=improvement_areas,
+            recommendations=recommendations,
+            keyword_analysis=keyword_analysis,
             ats_result=ats_result,
             resume_sections=resume_sections,
             job_match=job_match
         )
+
+    except PackageNotFoundError:
+        return "This file is not a valid DOCX document."
 
     except DocxReadError as error:
         # The message was written for the user, so it is safe to show
@@ -166,9 +165,6 @@ def analyze():
             f"Unable to analyze this {file_type}. "
             f"Please try another {file_type}."
         )
-        if extension == ".pdf":
-            return "Unable to analyze this PDF. Please try another PDF."
-        return "Unable to analyze this DOCX. Please try another DOCX."
 
     finally:
         if filepath and os.path.exists(filepath):
