@@ -2,22 +2,12 @@
 from pypdf import PdfReader
 
 from analyzer.section_detector import extract_sections
+from analyzer.resume_extractor import extract_pdf_text as _extract_pdf_text
 
 
 def extract_pdf_text(filepath):
-
-    reader = PdfReader(filepath)
-
-    text = ""
-
-    for page in reader.pages:
-
-        page_text = page.extract_text()
-
-        if page_text:
-            text += page_text + "\n"
-
-    return text
+    """Extract PDF text while preserving the legacy patchable reader."""
+    return _extract_pdf_text(filepath, reader_class=PdfReader)
 
 
 def extract_pdf_sections(filepath):
