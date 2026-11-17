@@ -167,8 +167,7 @@ class TestJobMatcher(unittest.TestCase):
         client = app.test_client()
 
         # Mock pdf extraction and analyze_ats
-        with patch("app.extract_pdf_text", return_value="John Doe\nSkills\nPython, SQL"), \
-             patch("app.os.remove"):
+        with patch("app.extract_resume_text", return_value="John Doe\nSkills\nPython, SQL"):
             data = {
                 "resume": (io.BytesIO(b"%PDF-1.4 dummy pdf"), "resume.pdf"),
             }
@@ -185,8 +184,7 @@ class TestJobMatcher(unittest.TestCase):
 
         client = app.test_client()
 
-        with patch("app.extract_pdf_text", return_value="John Doe\nSkills\nPython, SQL"), \
-             patch("app.os.remove"):
+        with patch("app.extract_resume_text", return_value="John Doe\nSkills\nPython, SQL"):
             data = {
                 "resume": (io.BytesIO(b"%PDF-1.4 dummy pdf"), "resume.pdf"),
                 "job_description": "We need Python and Docker developer."
