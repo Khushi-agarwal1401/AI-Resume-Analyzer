@@ -23,10 +23,24 @@ def extract_pdf_text(
     reader = (reader_class or PdfReader)(filepath)
     text = ""
 
-    for page in reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            text += page_text + "\n"
+    try:
+        for page in reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+    finally:
+        # Ensure file streams opened by PdfReader are explicitly closed
+        if hasattr(reader, "close"):
+            try:
+                reader.close()
+            except Exception:
+                pass
+        stream = getattr(reader, "stream", None)
+        if stream and hasattr(stream, "close"):
+            try:
+                stream.close()
+            except Exception:
+                pass
 
     return text
 
