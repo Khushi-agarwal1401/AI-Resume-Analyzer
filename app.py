@@ -25,6 +25,7 @@ from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report
+from analyzer.duplicate_detector import detect_duplicates
 from analyzer.skill_gap_analyzer import analyze_skill_gap, get_supported_roles
 from analyzer.roadmap_generator import generate_roadmap, calculate_roadmap_progress
 from analyzer.temp_manager import (
@@ -140,6 +141,8 @@ def analyze():
             resume_sections=resume_sections
         )
 
+        # Semantic and Exact Duplicate Content Detection
+        duplicate_analysis = detect_duplicates(resume_text)
         # Personalized Skill Gap Analysis against selected or best-matching career role
         target_role = request.form.get("target_role", "").strip() or None
         skill_gap = analyze_skill_gap(found_skills, target_role=target_role)
@@ -163,6 +166,7 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "job_match": job_match,
+            "duplicate_analysis": duplicate_analysis,
             "skill_gap": skill_gap,
             "roadmap": roadmap,
         }
@@ -171,6 +175,7 @@ def analyze():
         print("DETECTED SKILLS:", found_skills)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
+        print("DUPLICATE STATEMENTS DETECTED:", duplicate_analysis.get("total_duplicates_count"))
         print("TARGET ROLE:", skill_gap.get("target_role"))
         print("SKILL GAP MATCH:", f"{skill_gap.get('match_percentage')}% ({skill_gap.get('readiness_level')})")
         print("ROADMAP TASKS:", roadmap.get("total_tasks"))
@@ -198,6 +203,7 @@ def analyze():
             ats_result=ats_result,
             resume_sections=resume_sections,
             job_match=job_match,
+            duplicate_analysis=duplicate_analysis,
             skill_gap=skill_gap,
             supported_roles=get_supported_roles(),
             selected_role=target_role,
