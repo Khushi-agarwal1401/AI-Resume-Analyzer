@@ -10,6 +10,8 @@ import os
 from typing import Dict, List, Optional, Tuple
 import numpy as np
 
+from analyzer.nlp.base import BaseNLPModel
+
 logger = logging.getLogger(__name__)
 
 # Singleton cache for the embedding model
@@ -31,17 +33,17 @@ RELEVANT_SECTIONS = [
 
 
 def get_embedding_model(model_name: str = "all-MiniLM-L6-v2"):
-    """Load and cache the sentence embedding model.
+    """Load and cache the sentence embedding model or active pluggable NLP model.
 
-    Tries to load cached local files first, then falls back to default download.
-    If the model cannot be loaded (missing package, offline without cache, etc.),
+    Tries to load through the pluggable NLP architecture. If the model
+    cannot be loaded (missing package, offline without cache, etc.),
     handles the error gracefully and returns None without raising an exception.
 
     Args:
         model_name: HuggingFace model identifier for SentenceTransformer.
 
     Returns:
-        SentenceTransformer instance or None if loading fails.
+        BaseNLPModel / SentenceTransformer instance or None if loading fails.
     """
     global _MODEL, _MODEL_LOAD_ATTEMPTED, _MODEL_LOAD_ERROR
 
@@ -54,16 +56,14 @@ def get_embedding_model(model_name: str = "all-MiniLM-L6-v2"):
     _MODEL_LOAD_ATTEMPTED = True
 
     try:
-        from sentence_transformers import SentenceTransformer
-
-        # Attempt to load from local cache first to avoid unnecessary network calls
-        try:
-            _MODEL = SentenceTransformer(model_name, local_files_only=True)
-        except Exception:
-            _MODEL = SentenceTransformer(model_name)
-
-        _MODEL_LOAD_ERROR = None
-        return _MODEL
+        from analyzer.nlp.registry import get_nlp_model
+        nlp_model = get_nlp_model()
+        if nlp_model and nlp_model.is_available():
+            _MODEL = nlp_model
+            _MODEL_LOAD_ERROR = None
+            return _MODEL
+        _MODEL_LOAD_ERROR = "NLP model unavailable"
+        return None
 
     except Exception as exc:
         _MODEL_LOAD_ERROR = str(exc)
@@ -82,6 +82,13 @@ def set_embedding_model(model) -> None:
     _MODEL = model
     _MODEL_LOAD_ATTEMPTED = True
     _MODEL_LOAD_ERROR = None
+    try:
+        from analyzer.nlp.base import BaseNLPModel
+        from analyzer.nlp.registry import set_active_nlp_model
+        if isinstance(model, BaseNLPModel):
+            set_active_nlp_model(model)
+    except Exception:
+        pass
 
 
 def reset_embedding_model() -> None:
@@ -90,6 +97,11 @@ def reset_embedding_model() -> None:
     _MODEL = None
     _MODEL_LOAD_ATTEMPTED = False
     _MODEL_LOAD_ERROR = None
+    try:
+        from analyzer.nlp.registry import reset_active_nlp_model
+        reset_active_nlp_model()
+    except Exception:
+        pass
 
 
 def compute_cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
@@ -124,7 +136,7 @@ def generate_embedding(text: Optional[str], model=None) -> Optional[np.ndarray]:
 
     Args:
         text: Input string.
-        model: Optional SentenceTransformer instance. If None, uses cached model.
+        model: Optional SentenceTransformer or BaseNLPModel instance. If None, uses cached model.
 
     Returns:
         1D numpy array representing the text embedding, or None on failure.
@@ -137,12 +149,16 @@ def generate_embedding(text: Optional[str], model=None) -> Optional[np.ndarray]:
         return None
 
     try:
-        embedding = active_model.encode(
-            text.strip(),
-            convert_to_numpy=True,
-            show_progress_bar=False,
-        )
-        return embedding
+        if isinstance(active_model, BaseNLPModel):
+            return active_model.generate_embedding(text.strip())
+        elif hasattr(active_model, "encode"):
+            embedding = active_model.encode(
+                text.strip(),
+                convert_to_numpy=True,
+                show_progress_bar=False,
+            )
+            return np.asarray(embedding, dtype=np.float32)
+        return None
     except Exception as exc:
         logger.warning("Error generating embedding for text: %s", exc)
         return None
@@ -158,7 +174,7 @@ def calculate_text_similarity(
     Args:
         text1: First text snippet.
         text2: Second text snippet.
-        model: Optional SentenceTransformer instance.
+        model: Optional SentenceTransformer or BaseNLPModel instance.
 
     Returns:
         Similarity score in range [0.0, 1.0], or None if model unavailable.
@@ -171,6 +187,8 @@ def calculate_text_similarity(
         return None
 
     try:
+        if isinstance(active_model, BaseNLPModel):
+            return active_model.compute_similarity(text1, text2)
         emb1 = generate_embedding(text1, model=active_model)
         emb2 = generate_embedding(text2, model=active_model)
         if emb1 is None or emb2 is None:
