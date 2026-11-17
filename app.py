@@ -152,7 +152,11 @@ def analyze():
             job_description = request.form.get("job_description", "")
         job_description = str(job_description or "")[:MAX_JOB_DESCRIPTION_LENGTH]
 
-        keyword_analysis = analyze_keywords(resume_text, job_description)
+        keyword_analysis = analyze_keywords(
+            resume_text,
+            job_description,
+            resume_sections=resume_sections
+        )
         # ATS Compatibility Analysis
         ats_result = analyze_ats(resume_text, found_skills)
 

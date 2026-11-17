@@ -459,6 +459,60 @@
 
         {% endif %}
 
+        <!-- Section-wise Keyword Analysis (Issue #59) -->
+        {% if keyword_analysis.section_keywords %}
+        <h3 class="keyword-subtitle" style="margin-top: 28px;">Section-wise Keyword Distribution</h3>
+        <p style="font-size: 13px; color: var(--text-soft, #6b7280); margin-bottom: 16px;">
+            See where your keywords appear across major resume sections. Keywords matching the job description are highlighted.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px;">
+            {% for sec_key, sec in keyword_analysis.section_keywords.items() %}
+            <div style="background: var(--surface-soft, #faf9fe); border: 1px solid var(--border, #e5e7eb); border-radius: 12px; padding: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--border, #eeedf6); padding-bottom: 8px;">
+                    <strong style="color: var(--text, #302b4c); font-size: 15px;">{{ sec.title }}</strong>
+                    <span class="tag" style="font-size: 11px; padding: 3px 8px;">{{ sec.keyword_count }} keyword(s)</span>
+                </div>
+
+                {% if sec.keywords %}
+                <div class="keyword-chips" style="gap: 8px;">
+                    {% for kw in sec.keywords %}
+                    <span class="keyword-chip {% if kw.is_job_match %}keyword-chip-match{% endif %}" style="font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                        {% if kw.is_job_match %}✓{% endif %} {{ kw.keyword }}
+                        <small style="opacity: 0.85;">{{ kw.count }}×</small>
+                    </span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="font-size: 12px; color: var(--muted, #9ca3af); font-style: italic; margin: 8px 0 0 0;">No keywords detected in this section.</p>
+                {% endif %}
+
+                {% if keyword_analysis.job_match and keyword_analysis.job_match.keyword_count %}
+                <div style="margin-top: 10px; font-size: 11px; color: var(--muted, #6b7280);">
+                    Matches job keywords: <strong>{{ sec.matched_job_keywords|length }}</strong>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if keyword_analysis.cross_section_keywords %}
+        <div style="margin-top: 14px; margin-bottom: 20px; padding: 12px 16px; background: rgba(112, 84, 217, 0.06); border-radius: 10px; border-left: 3px solid var(--accent, #7054d9);">
+            <strong style="font-size: 13px; color: var(--accent, #7054d9);">Cross-Section Keywords:</strong>
+            <p style="font-size: 12px; color: var(--text-soft, #4b5563); margin: 4px 0 0 0;">
+                These keywords appear in multiple sections of your resume, reinforcing core qualifications:
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                {% for item in keyword_analysis.cross_section_keywords %}
+                <span class="keyword-chip" style="font-size: 11px; background: var(--surface, #ffffff);">
+                    <strong>{{ item.keyword }}</strong> ({{ item.total_count }}× across {{ item.section_names|join(', ') }})
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
         <h3 class="keyword-subtitle">What to do</h3>
 
         {% for tip in keyword_analysis.tips %}
