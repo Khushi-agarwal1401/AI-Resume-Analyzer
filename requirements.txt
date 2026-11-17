@@ -2,3 +2,4 @@ Flask
 pypdf
 python-docx
 python-docx
+fpdf2
