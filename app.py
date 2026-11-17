@@ -89,6 +89,7 @@ def analyze():
     )
 
     try:
+        # Save the uploaded resume
         # Save the uploaded resume.
         file.save(filepath)
 
@@ -112,6 +113,10 @@ def analyze():
 
         resume_score = score_data["score"]
         score_breakdown = score_data["breakdown"]
+        category_details = score_data.get("category_details", {})
+        overall_explanation = score_data.get("overall_explanation", "")
+        scoring_formula = score_data.get("scoring_formula", "")
+        improvement_areas = score_data.get("improvement_areas", [])
 
         # Section-wise improvement recommendations
         recommendations = generate_recommendations(resume_text)
@@ -175,6 +180,10 @@ def analyze():
             resume_text=resume_text,
             resume_score=resume_score,
             score_breakdown=score_breakdown,
+            category_details=category_details,
+            overall_explanation=overall_explanation,
+            scoring_formula=scoring_formula,
+            improvement_areas=improvement_areas,
             recommendations=recommendations,
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
@@ -185,6 +194,11 @@ def analyze():
         )
 
     except PackageNotFoundError:
+        return "This file is not a valid DOCX document."
+
+    except DocxReadError as error:
+        # The message was written for the user, so it is safe to show
+        return str(error)
         # A file named .docx that is not a real Word document
         return "This file is not a valid DOCX document."
 
