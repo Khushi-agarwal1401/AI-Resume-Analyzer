@@ -7,6 +7,7 @@ from flask import Flask, render_template, request
 from werkzeug.utils import secure_filename
 
 from analyzer.pdf_reader import extract_pdf_text
+from analyzer.docx_reader import extract_docx_text, DocxReadError
 from analyzer.section_detector import extract_sections
 from analyzer.skills_extractor import extract_skills, get_suggestions
 from analyzer.resume_scorer import calculate_resume_score
@@ -18,6 +19,8 @@ app = Flask(__name__)
 
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
+
+ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
@@ -40,8 +43,13 @@ def analyze():
     if file.filename == "":
         return "No file selected."
 
-    if not file.filename.lower().endswith(".pdf"):
-        return "Only PDF files are allowed."
+    extension = os.path.splitext(file.filename.lower())[1]
+
+    if extension not in ALLOWED_EXTENSIONS:
+        return "Only PDF and DOCX files are allowed."
+
+    # Used in messages shown to the user: "PDF" or "DOCX"
+    file_type = extension[1:].upper()
 
     filename = secure_filename(file.filename)
 
@@ -56,14 +64,17 @@ def analyze():
     )
 
     try:
-        # Save PDF
+        # Save the uploaded resume
         file.save(filepath)
 
-        # Extract PDF text
-        resume_text = extract_pdf_text(filepath)
+        # Extract text (the rest of the analysis is the same for both types)
+        if extension == ".docx":
+            resume_text = extract_docx_text(filepath)
+        else:
+            resume_text = extract_pdf_text(filepath)
 
         if not resume_text.strip():
-            return "No readable text found in this PDF."
+            return f"No readable text found in this {file_type}."
 
         # Detect and organize sections
         resume_sections = extract_sections(resume_text)
@@ -109,9 +120,16 @@ def analyze():
             job_match=job_match
         )
 
+    except DocxReadError as error:
+        # The message was written for the user, so it is safe to show
+        return str(error)
+
     except Exception as error:
         print("Analysis Error:", error)
-        return "Unable to analyze this PDF. Please try another PDF."
+        return (
+            f"Unable to analyze this {file_type}. "
+            f"Please try another {file_type}."
+        )
 
     finally:
         if filepath and os.path.exists(filepath):
