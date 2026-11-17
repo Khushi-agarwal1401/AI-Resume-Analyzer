@@ -363,12 +363,15 @@
         <p class="ats-rating">
             <strong>{{ job_match.match_percentage }}% Match</strong>
             &middot; {{ job_match.total_matching }} of {{ job_match.total_required }} Required Skills
+            {% if job_match.semantic_match_percentage is not none %}
+                &middot; {{ job_match.semantic_match_percentage }}% Semantic Similarity
+            {% endif %}
         </p>
 
         <div class="score-row">
             <div class="score-label">
-                <span>Skill Match Rate</span>
-                <strong>{{ job_match.total_matching }} / {{ job_match.total_required }}</strong>
+                <span>Overall Match Rate</span>
+                <strong>{{ job_match.match_percentage }}%</strong>
             </div>
 
             <div class="progress-track">
@@ -377,6 +380,51 @@
                 </div>
             </div>
         </div>
+
+        <div class="score-row">
+            <div class="score-label">
+                <span>Keyword Skill Overlap</span>
+                <strong>{{ job_match.total_matching }} / {{ job_match.total_required }} ({{ job_match.keyword_match_percentage }}%)</strong>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-fill"
+                     data-width="{{ job_match.keyword_match_percentage }}">
+                </div>
+            </div>
+        </div>
+
+        {% if job_match.semantic_match_percentage is not none %}
+        <div class="score-row">
+            <div class="score-label">
+                <span>Semantic Content Similarity</span>
+                <strong>{{ job_match.semantic_match_percentage }}%</strong>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-fill"
+                     data-width="{{ job_match.semantic_match_percentage }}">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if job_match.section_similarities %}
+        <h3 class="ats-subheading">Section Semantic Alignment</h3>
+        {% for sec_name, sec_score in job_match.section_similarities.items() %}
+        <div class="score-row">
+            <div class="score-label">
+                <span>{{ sec_name }}</span>
+                <strong>{{ sec_score }}%</strong>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill"
+                     data-width="{{ sec_score }}">
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
 
         <h3 class="ats-subheading">Matching Skills ({{ job_match.matching_skills|length }})</h3>
         {% if job_match.matching_skills %}
@@ -387,6 +435,16 @@
             </div>
         {% else %}
             <p class="ats-note">No matching skills detected from the job description requirements.</p>
+        {% endif %}
+
+        {% if job_match.semantically_related_skills %}
+        <h3 class="ats-subheading">Semantically Related Skills ({{ job_match.semantically_related_skills|length }})</h3>
+        <p class="ats-note">Candidate skills identified by NLP as conceptually equivalent or related to job requirements:</p>
+        <div class="skill-list">
+            {% for item in job_match.semantically_related_skills %}
+                <span class="skill-tag semantic">~ {{ item.required_skill }} (relates to {{ item.matched_skill }} &middot; {{ item.similarity }}%)</span>
+            {% endfor %}
+        </div>
         {% endif %}
 
         <h3 class="ats-subheading">Missing Skills ({{ job_match.missing_skills|length }})</h3>
@@ -403,6 +461,10 @@
                 <p class="ats-note">No specific technical skill requirements were found in the job description.</p>
             {% endif %}
         {% endif %}
+
+        <p class="ats-note" style="margin-top: 20px; font-style: italic; border-top: 1px solid #eeedf6; padding-top: 12px;">
+            ✦ {{ job_match.disclaimer }}
+        </p>
     </section>
     {% endif %}
 
