@@ -78,4 +78,83 @@ document.addEventListener("DOMContentLoaded", function () {
         updateButton();
     });
 
+    // ==========================================
+    // ROADMAP TASK COMPLETION LOGIC
+    // ==========================================
+    const checkboxes = document.querySelectorAll(".roadmap-task-checkbox");
+    if (checkboxes.length > 0) {
+        const progressBar = document.getElementById("roadmap-progress-bar");
+        const progressText = document.getElementById("roadmap-progress-text");
+        const STORAGE_KEY = "roadmap_completed_tasks";
+
+        let completedSet = new Set();
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                completedSet = new Set(JSON.parse(saved));
+            }
+        } catch (e) {}
+
+        function updateRoadmapProgress() {
+            let completed = 0;
+            const total = checkboxes.length;
+
+            checkboxes.forEach(function (cb) {
+                const taskId = cb.getAttribute("data-task-id");
+                const card = document.getElementById("card_" + taskId);
+                if (cb.checked) {
+                    completed++;
+                    completedSet.add(taskId);
+                    if (card) {
+                        card.style.opacity = "0.65";
+                        const title = card.querySelector(".task-title");
+                        if (title) title.style.textDecoration = "line-through";
+                    }
+                } else {
+                    completedSet.delete(taskId);
+                    if (card) {
+                        card.style.opacity = "1";
+                        const title = card.querySelector(".task-title");
+                        if (title) title.style.textDecoration = "none";
+                    }
+                }
+            });
+
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            if (progressBar) {
+                progressBar.style.width = pct + "%";
+                progressBar.setAttribute("data-width", pct);
+            }
+            if (progressText) {
+                progressText.textContent = `${completed} of ${total} Tasks Completed (${pct}%)`;
+            }
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(completedSet)));
+            } catch (e) {}
+        }
+
+        checkboxes.forEach(function (cb) {
+            const taskId = cb.getAttribute("data-task-id");
+            if (completedSet.has(taskId)) {
+                cb.checked = true;
+            }
+
+            cb.addEventListener("change", function () {
+                updateRoadmapProgress();
+
+                // Sync with server session
+                try {
+                    fetch("/roadmap/toggle", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ task_id: taskId, completed: cb.checked }),
+                    }).catch(function () {});
+                } catch (e) {}
+            });
+        });
+
+        updateRoadmapProgress();
+    }
+
 });
