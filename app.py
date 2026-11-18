@@ -28,6 +28,8 @@ from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report, build_txt_report
 from analyzer.report_generator import build_report
 from analyzer.project_checker import check_project_descriptions
+from analyzer.timeline_checker import check_timeline_consistency
+from analyzer.credentials_detector import detect_certifications, detect_achievements
 from analyzer.validator import (
     ALLOWED_EXTENSIONS,
     MAX_JOB_DESCRIPTION_LENGTH,
@@ -129,6 +131,16 @@ def analyze():
         # Detect and organize sections
         resume_sections = extract_sections(resume_text)
 
+        # Detect Certifications and Achievements (Issue #56)
+        certifications = detect_certifications(
+            resume_text,
+            resume_sections=resume_sections
+        )
+        achievements = detect_achievements(
+            resume_text,
+            resume_sections=resume_sections
+        )
+
         # Detect Skills
         found_skills = extract_skills(resume_text)
 
@@ -164,6 +176,8 @@ def analyze():
 
         # Project Description Quality Analysis (Issue #52)
         project_analysis = check_project_descriptions(
+        # Timeline & Date Consistency Analysis (Issue #53)
+        timeline_analysis = check_timeline_consistency(
             resume_text,
             resume_sections=resume_sections
         )
@@ -202,6 +216,9 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "project_analysis": project_analysis,
+            "timeline": timeline_analysis,
+            "certifications": certifications,
+            "achievements": achievements,
             "recommendations": recommendations,
             "job_match": job_match,
             "duplicate_analysis": duplicate_analysis,
@@ -212,6 +229,9 @@ def analyze():
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("PROJECTS STATUS:", project_analysis.get("overall_status"))
+        print("TIMELINE STATUS:", timeline_analysis.get("timeline_status"))
+        print("CERTIFICATIONS:", certifications)
+        print("ACHIEVEMENTS:", achievements)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
         print("DUPLICATE STATEMENTS DETECTED:", duplicate_analysis.get("total_duplicates_count"))
@@ -258,7 +278,10 @@ def analyze():
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
             project_analysis=project_analysis,
+            timeline_analysis=timeline_analysis,
             resume_sections=resume_sections,
+            certifications=certifications,
+            achievements=achievements,
             job_match=job_match,
             duplicate_analysis=duplicate_analysis,
             skill_gap=skill_gap,
