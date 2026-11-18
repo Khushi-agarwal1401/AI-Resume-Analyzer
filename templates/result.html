@@ -358,6 +358,109 @@
     </section>
 
 
+    <!-- Project Description Quality Analysis -->
+    {% if project_analysis %}
+    <section class="result-card">
+        <h2>Project Description Quality</h2>
+
+        <p class="ats-note">
+            Evaluation of project descriptions to ensure technical stack, problem objectives, and your personal contributions are clearly detailed.
+        </p>
+
+        <p class="ats-rating">
+            <strong>Status: {{ project_analysis.overall_status }}</strong>
+            &middot; {{ project_analysis.total_projects }} project{% if project_analysis.total_projects != 1 %}s{% endif %} detected
+            {% if project_analysis.total_projects > 0 %}
+                &middot; Quality Score: {{ project_analysis.quality_score }} / 100
+            {% endif %}
+        </p>
+
+        {% if project_analysis.projects %}
+            {% for proj in project_analysis.projects %}
+            <div style="border: 1px solid #eeedf6; border-radius: 12px; padding: 18px; margin-bottom: 16px; background: #faf9ff;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                    <h3 style="margin: 0; font-size: 16px; color: #7054d9;">🚀 {{ proj.title }}</h3>
+                    <span class="skill-tag" style="{% if proj.quality_status == 'Detailed & Strong' %}background: #eefbf4; color: #1b8748; border-color: #c6f0d6;{% elif proj.quality_status == 'Needs Improvement' %}background: #fff0f0; color: #d94545; border-color: #ffd4d4;{% endif %}">
+                        {{ proj.quality_status }} ({{ proj.score }}/100)
+                    </span>
+                </div>
+
+                <div class="skill-list" style="margin-top: 8px; margin-bottom: 12px;">
+                    {% if proj.has_technologies %}
+                        <span class="skill-tag">✓ Technologies: {{ proj.technologies|join(', ') }}</span>
+                    {% else %}
+                        <span class="skill-tag missing">✗ Missing Technologies</span>
+                    {% endif %}
+
+                    {% if proj.has_objective %}
+                        <span class="skill-tag">✓ Clear Objective</span>
+                    {% else %}
+                        <span class="skill-tag missing">✗ Missing Objective</span>
+                    {% endif %}
+
+                    {% if proj.has_contributions %}
+                        <span class="skill-tag">✓ Key Contributions</span>
+                    {% else %}
+                        <span class="skill-tag missing">✗ Missing Contributions</span>
+                    {% endif %}
+
+                    {% if proj.has_metrics %}
+                        <span class="skill-tag">✓ Measurable Metrics</span>
+                    {% endif %}
+                </div>
+
+                {% if proj.missing_details %}
+                <div style="margin-top: 10px;">
+                    <strong style="font-size: 13px; color: #d94545;">Missing Details to Address:</strong>
+                    <ul style="margin: 6px 0 10px 20px; font-size: 13px; color: #555;">
+                        {% for detail in proj.missing_details %}
+                            <li>{{ detail }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if proj.wording_suggestions %}
+                <div style="margin-top: 12px; border-top: 1px dashed #e2deee; padding-top: 10px;">
+                    <strong style="font-size: 13px; color: #7054d9;">Sample Wording Suggestions (Use with your own details):</strong>
+                    {% for item in proj.wording_suggestions %}
+                    <div class="suggestion" style="margin: 8px 0; font-size: 13px;">
+                        <strong>{{ item.focus }}:</strong> <code>{{ item.suggestion }}</code>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if project_analysis.general_suggestions %}
+        <h3 class="ats-subheading">General Recommendations</h3>
+        {% for tip in project_analysis.general_suggestions %}
+            <div class="suggestion">
+                ✦ {{ tip }}
+            </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if project_analysis.sample_templates %}
+        <details style="margin-top: 16px;">
+            <summary><strong>View Standard Project Description Templates & Examples</strong></summary>
+            <div style="margin-top: 12px;">
+                {% for t in project_analysis.sample_templates %}
+                <div class="suggestion" style="margin-bottom: 12px;">
+                    <strong style="color: #7054d9;">{{ t.category }}</strong> &middot; <span style="font-size: 12px; color: #666;">{{ t.description }}</span><br>
+                    <div style="margin-top: 6px;"><strong>Template:</strong> <code>{{ t.template }}</code></div>
+                    <div style="margin-top: 4px; font-style: italic; color: #777;"><strong>Example:</strong> {{ t.example }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </details>
+        {% endif %}
+    </section>
+    {% endif %}
+
+
     <!-- Job Description Matching -->
     {% if job_match and job_match.has_job_description %}
     <section class="result-card">

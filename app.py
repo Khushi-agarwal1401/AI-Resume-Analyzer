@@ -19,6 +19,7 @@ from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report
+from analyzer.project_checker import check_project_descriptions
 
 
 app = Flask(__name__)
@@ -113,6 +114,12 @@ def analyze():
         # ATS Compatibility Analysis
         ats_result = analyze_ats(resume_text, found_skills)
 
+        # Project Description Quality Analysis (Issue #52)
+        project_analysis = check_project_descriptions(
+            resume_text,
+            resume_sections=resume_sections
+        )
+
         # Job Description Matching
         job_description = request.form.get("job_description", "")
         job_match = match_resume_to_job(
@@ -128,11 +135,13 @@ def analyze():
             "breakdown": score_breakdown,
             "skills": found_skills,
             "suggestions": suggestions,
+            "project_analysis": project_analysis,
             "job_match": job_match,
         }
 
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
+        print("PROJECTS STATUS:", project_analysis.get("overall_status"))
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
         if job_match.get("has_job_description"):
@@ -153,6 +162,7 @@ def analyze():
             recommendations=recommendations,
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
+            project_analysis=project_analysis,
             resume_sections=resume_sections,
             job_match=job_match,
             report_json=json.dumps(report)
