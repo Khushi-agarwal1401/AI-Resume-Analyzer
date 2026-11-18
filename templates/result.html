@@ -804,6 +804,25 @@
                 </div>
                 <p style="margin: 0; color: #78350f;">"{{ item.sentence }}"</p>
             </div>
+    <!-- Date & Timeline Consistency Analysis -->
+    {% if timeline_analysis %}
+    <section class="result-card">
+        <h2>Date & Timeline Consistency</h2>
+
+        <p class="ats-note">
+            Analysis of resume dates, chronology, and timeline formatting to help ensure a professional, consistent presentation.
+        </p>
+
+        <p class="ats-rating">
+            <strong>Status: {{ timeline_analysis.timeline_status }}</strong>
+            &middot; {{ timeline_analysis.total_ranges_detected }} date range{% if timeline_analysis.total_ranges_detected != 1 %}s{% endif %} detected
+        </p>
+
+        {% if timeline_analysis.detected_formats %}
+        <h3 class="ats-subheading">Detected Date Formats</h3>
+        <div class="skill-list">
+            {% for fmt in timeline_analysis.detected_formats %}
+                <span class="skill-tag">📅 {{ fmt }}</span>
             {% endfor %}
         </div>
         {% endif %}
@@ -824,10 +843,27 @@
         <!-- Readability Recommendations -->
         <h3 class="ats-subheading">Readability Recommendations</h3>
         {% for tip in readability_analysis.recommendations %}
+        {% if timeline_analysis.inconsistencies %}
+        <h3 class="ats-subheading">Observations & Advisory Notes</h3>
+        {% for inc in timeline_analysis.inconsistencies %}
+            <div class="suggestion">
+                <strong>{{ inc.title }}:</strong> {{ inc.message }}
+            </div>
+        {% endfor %}
+        {% else %}
+        <div class="suggestion">
+            ✦ All detected dates follow a consistent format and reverse-chronological order.
+        </div>
+        {% endif %}
+
+        {% if timeline_analysis.recommendations %}
+        <h3 class="ats-subheading">Timeline Recommendations</h3>
+        {% for tip in timeline_analysis.recommendations %}
             <div class="suggestion">
                 ✦ {{ tip }}
             </div>
         {% endfor %}
+        {% endif %}
     </section>
     {% endif %}
 
