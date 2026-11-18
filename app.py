@@ -27,6 +27,7 @@ from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report, build_txt_report
 from analyzer.report_generator import build_report
+from analyzer.credentials_detector import detect_certifications, detect_achievements
 from analyzer.validator import (
     ALLOWED_EXTENSIONS,
     MAX_JOB_DESCRIPTION_LENGTH,
@@ -128,6 +129,16 @@ def analyze():
         # Detect and organize sections
         resume_sections = extract_sections(resume_text)
 
+        # Detect Certifications and Achievements (Issue #56)
+        certifications = detect_certifications(
+            resume_text,
+            resume_sections=resume_sections
+        )
+        achievements = detect_achievements(
+            resume_text,
+            resume_sections=resume_sections
+        )
+
         # Detect Skills
         found_skills = extract_skills(resume_text)
 
@@ -194,6 +205,8 @@ def analyze():
             "breakdown": score_breakdown,
             "skills": found_skills,
             "suggestions": suggestions,
+            "certifications": certifications,
+            "achievements": achievements,
             "recommendations": recommendations,
             "job_match": job_match,
             "duplicate_analysis": duplicate_analysis,
@@ -203,6 +216,8 @@ def analyze():
 
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
+        print("CERTIFICATIONS:", certifications)
+        print("ACHIEVEMENTS:", achievements)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
         print("DUPLICATE STATEMENTS DETECTED:", duplicate_analysis.get("total_duplicates_count"))
@@ -249,6 +264,8 @@ def analyze():
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
             resume_sections=resume_sections,
+            certifications=certifications,
+            achievements=achievements,
             job_match=job_match,
             duplicate_analysis=duplicate_analysis,
             skill_gap=skill_gap,
