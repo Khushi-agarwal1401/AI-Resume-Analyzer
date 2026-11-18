@@ -19,6 +19,7 @@ from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report
+from analyzer.action_verb_analyzer import analyze_action_verbs
 
 
 app = Flask(__name__)
@@ -113,6 +114,12 @@ def analyze():
         # ATS Compatibility Analysis
         ats_result = analyze_ats(resume_text, found_skills)
 
+        # Action Verb Analysis (Issue #54)
+        action_verb_analysis = analyze_action_verbs(
+            resume_text,
+            resume_sections=resume_sections
+        )
+
         # Job Description Matching
         job_description = request.form.get("job_description", "")
         job_match = match_resume_to_job(
@@ -128,11 +135,13 @@ def analyze():
             "breakdown": score_breakdown,
             "skills": found_skills,
             "suggestions": suggestions,
+            "action_verbs": action_verb_analysis,
             "job_match": job_match,
         }
 
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
+        print("ACTION VERBS COUNT:", action_verb_analysis.get("total_action_verbs"))
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
         if job_match.get("has_job_description"):
@@ -153,6 +162,7 @@ def analyze():
             recommendations=recommendations,
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
+            action_verb_analysis=action_verb_analysis,
             resume_sections=resume_sections,
             job_match=job_match,
             report_json=json.dumps(report)
