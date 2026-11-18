@@ -28,6 +28,7 @@ from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report, build_txt_report
 from analyzer.report_generator import build_report
 from analyzer.section_quality import analyze_section_quality
+from analyzer.action_verb_analyzer import analyze_action_verbs
 from analyzer.readability_analyzer import analyze_readability
 from analyzer.timeline_checker import check_timeline_consistency
 from analyzer.credentials_detector import detect_certifications, detect_achievements
@@ -177,6 +178,8 @@ def analyze():
 
         # Section Quality Analysis (Issue #51)
         section_quality = analyze_section_quality(
+        # Action Verb Analysis (Issue #54)
+        action_verb_analysis = analyze_action_verbs(
         # Readability Analysis (Issue #55)
         readability_analysis = analyze_readability(resume_text)
         # Timeline & Date Consistency Analysis (Issue #53)
@@ -219,6 +222,7 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "section_quality": section_quality,
+            "action_verbs": action_verb_analysis,
             "readability": readability_analysis,
             "timeline": timeline_analysis,
             "certifications": certifications,
@@ -233,6 +237,7 @@ def analyze():
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("SECTION QUALITY:", section_quality.get("summary", {}).get("overall_quality"))
+        print("ACTION VERBS COUNT:", action_verb_analysis.get("total_action_verbs"))
         print("TIMELINE STATUS:", timeline_analysis.get("timeline_status"))
         print("CERTIFICATIONS:", certifications)
         print("ACHIEVEMENTS:", achievements)
@@ -284,6 +289,7 @@ def analyze():
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
             section_quality=section_quality,
+            action_verb_analysis=action_verb_analysis,
             readability_analysis=readability_analysis,
             timeline_analysis=timeline_analysis,
             resume_sections=resume_sections,
