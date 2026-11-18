@@ -167,6 +167,34 @@ def match_resume_to_job(
     # Extract requirements from the job description
     required = extract_job_skills(job_description)
 
+    # Handle case where no recognizable skills are detected in the job description early
+    if not required:
+        explanation = (
+            "No recognizable technical skills were detected in the provided job description. "
+            "Try including specific tools, technologies or languages. "
+            f"{HIRING_DISCLAIMER}"
+        )
+
+        return {
+            "matching_skills": [],
+            "exact_matching_skills": [],
+            "semantically_related_skills": [],
+            "missing_skills": [],
+            "required_skills": [],
+            "match_percentage": 0,
+            "keyword_match_percentage": 0,
+            "semantic_match_percentage": None,
+            "section_similarities": {},
+            "total_required": 0,
+            "total_matching": 0,
+            "exact_matching_count": 0,
+            "semantic_matching_count": 0,
+            "has_job_description": True,
+            "explanation": explanation,
+            "disclaimer": HIRING_DISCLAIMER,
+            "semantic_status": "unavailable",
+        }
+
     # Normalize resume skills for case-insensitive and alias-aware comparison
     resume_skills_canonical: Set[str] = set()
     for s in (resume_skills or []):
@@ -180,7 +208,7 @@ def match_resume_to_job(
         )
         resume_skills_canonical.add(matched_title)
 
-    # Keyword intersection
+    # Keyword intersection (exact canonical matches)
     matching: List[str] = []
     initial_missing: List[str] = []
     resume_skills_lower = {s.lower() for s in resume_skills_canonical}
@@ -192,13 +220,7 @@ def match_resume_to_job(
             initial_missing.append(req)
 
     total_required = len(required)
-    total_matching = len(matching)
-
-    keyword_percentage = (
-        round((total_matching / total_required) * 100)
-        if total_required > 0
-        else 0
-    )
+    exact_matching_count = len(matching)
 
     # Perform semantic matching with graceful error handling
     semantic_result = {
@@ -237,30 +259,19 @@ def match_resume_to_job(
     related_req_names = {r["required_skill"].lower() for r in semantically_related}
     final_missing = [m for m in initial_missing if m.lower() not in related_req_names]
 
-    # Handle case where no recognizable skills are detected in the job description
-    if not required:
-        explanation = (
-            "No recognizable technical skills were detected in the provided job description. "
-            "Try including specific tools, technologies or languages. "
-            f"{HIRING_DISCLAIMER}"
-        )
+    # Accounting consistency: total_matching includes both exact and semantically related skills
+    semantic_matching_count = len(semantically_related)
+    total_matching = exact_matching_count + semantic_matching_count
 
-        return {
-            "matching_skills": [],
-            "semantically_related_skills": [],
-            "missing_skills": [],
-            "required_skills": [],
-            "match_percentage": 0,
-            "keyword_match_percentage": 0,
-            "semantic_match_percentage": semantic_sim,
-            "section_similarities": section_similarities,
-            "total_required": 0,
-            "total_matching": 0,
-            "has_job_description": True,
-            "explanation": explanation,
-            "disclaimer": HIRING_DISCLAIMER,
-            "semantic_status": semantic_status,
-        }
+    # Weighted skill match score: 1.0 per exact match + proportional partial credit for semantic matches
+    weighted_score = exact_matching_count + sum(
+        (s.get("similarity", 60) / 100.0) for s in semantically_related
+    )
+    keyword_percentage = (
+        round((weighted_score / total_required) * 100)
+        if total_required > 0
+        else 0
+    )
 
     # Calculate combined match percentage and explanation
     if resume_text is not None and semantic_sim is not None:
@@ -271,7 +282,7 @@ def match_resume_to_job(
         explanation_parts = [
             f"Overall match score ({match_percentage}%) combines keyword matching ({keyword_percentage}%) "
             f"and semantic content similarity ({semantic_sim}%).",
-            f"{total_matching} of {total_required} required skills were exact matches."
+            f"{exact_matching_count} of {total_required} required skills were exact matches."
         ]
 
         if semantically_related:
@@ -291,12 +302,11 @@ def match_resume_to_job(
         # Fallback to keyword-only matching (e.g. when resume_text was not passed, or model error)
         match_percentage = keyword_percentage
 
-        explanation_parts = [
-            f"Match percentage measures skill overlap: "
-            f"({total_matching} matching / {total_required} required) × 100 = {keyword_percentage}%."
-        ]
-
         if semantically_related:
+            explanation_parts = [
+                f"Match percentage measures skill overlap: "
+                f"({exact_matching_count} exact + {semantic_matching_count} semantic / {total_required} required) = {keyword_percentage}%."
+            ]
             related_items = [
                 f"'{s['matched_skill']}' relates to '{s['required_skill']}' ({s['similarity']}%)"
                 for s in semantically_related
@@ -305,6 +315,11 @@ def match_resume_to_job(
                 f"Identified {len(semantically_related)} semantically related skill(s): "
                 + ", ".join(related_items) + "."
             )
+        else:
+            explanation_parts = [
+                f"Match percentage measures skill overlap: "
+                f"({exact_matching_count} matching / {total_required} required) × 100 = {keyword_percentage}%."
+            ]
 
         if semantic_status == "error":
             explanation_parts.append(
@@ -317,6 +332,7 @@ def match_resume_to_job(
 
     return {
         "matching_skills": matching,
+        "exact_matching_skills": matching,
         "semantically_related_skills": semantically_related,
         "missing_skills": final_missing,
         "required_skills": required,
@@ -326,6 +342,8 @@ def match_resume_to_job(
         "section_similarities": section_similarities,
         "total_required": total_required,
         "total_matching": total_matching,
+        "exact_matching_count": exact_matching_count,
+        "semantic_matching_count": semantic_matching_count,
         "has_job_description": True,
         "explanation": explanation,
         "disclaimer": HIRING_DISCLAIMER,
