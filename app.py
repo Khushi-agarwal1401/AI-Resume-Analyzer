@@ -27,6 +27,7 @@ from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report, build_txt_report
 from analyzer.report_generator import build_report
+from analyzer.section_quality import analyze_section_quality
 from analyzer.project_checker import check_project_descriptions
 from analyzer.action_verb_analyzer import analyze_action_verbs
 from analyzer.readability_analyzer import analyze_readability
@@ -176,6 +177,8 @@ def analyze():
         # ATS Compatibility Analysis
         ats_result = analyze_ats(resume_text, found_skills)
 
+        # Section Quality Analysis (Issue #51)
+        section_quality = analyze_section_quality(
         # Project Description Quality Analysis (Issue #52)
         project_analysis = check_project_descriptions(
         # Action Verb Analysis (Issue #54)
@@ -221,6 +224,7 @@ def analyze():
             "breakdown": score_breakdown,
             "skills": found_skills,
             "suggestions": suggestions,
+            "section_quality": section_quality,
             "project_analysis": project_analysis,
             "action_verbs": action_verb_analysis,
             "readability": readability_analysis,
@@ -236,6 +240,7 @@ def analyze():
 
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
+        print("SECTION QUALITY:", section_quality.get("summary", {}).get("overall_quality"))
         print("PROJECTS STATUS:", project_analysis.get("overall_status"))
         print("ACTION VERBS COUNT:", action_verb_analysis.get("total_action_verbs"))
         print("TIMELINE STATUS:", timeline_analysis.get("timeline_status"))
@@ -288,6 +293,7 @@ def analyze():
             recommendations=recommendations,
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
+            section_quality=section_quality,
             project_analysis=project_analysis,
             action_verb_analysis=action_verb_analysis,
             readability_analysis=readability_analysis,

@@ -748,6 +748,51 @@
     </section>
 
 
+    <!-- Resume Section Quality Analysis -->
+    {% if section_quality %}
+    <section class="result-card">
+        <h2>Section Quality & Completeness</h2>
+
+        <p class="ats-note">
+            Detailed evaluation of content depth, key information, and completeness within each section of your resume.
+        </p>
+
+        <p class="ats-rating">
+            <strong>Overall Quality: {{ section_quality.summary.overall_quality }}</strong>
+            &middot; {{ section_quality.summary.complete_sections_count }} Complete
+            {% if section_quality.summary.incomplete_sections_count > 0 %}
+                &middot; {{ section_quality.summary.incomplete_sections_count }} Need Detail
+            {% endif %}
+        </p>
+
+        {% if section_quality.sections %}
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 16px;">
+            {% for sec_key, sec in section_quality.sections.items() %}
+            <div style="border: 1px solid #eeedf6; border-radius: 12px; padding: 16px; background: #faf9ff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                    <h3 style="margin: 0; font-size: 15px; color: #7054d9;">
+                        {{ sec.name }}
+                        {% if sec.is_optional %}<small style="font-size: 11px; color: #888;">(Optional)</small>{% endif %}
+                    </h3>
+                    <span class="skill-tag" style="{% if sec.status == 'Complete' %}background: #eefbf4; color: #1b8748; border-color: #c6f0d6;{% elif sec.status == 'Needs Detail' or sec.status == 'Missing' %}background: #fff0f0; color: #d94545; border-color: #ffd4d4;{% else %}background: #f0f7ff; color: #0284c7; border-color: #bae6fd;{% endif %}">
+                        {{ sec.status }}{% if sec.present %} ({{ sec.quality_score }}/100){% endif %}
+                    </span>
+                </div>
+
+                {% if sec.strengths %}
+                <div style="margin-top: 6px;">
+                    {% for strength in sec.strengths %}
+                        <span class="skill-tag" style="font-size: 11px; padding: 4px 10px; margin-right: 6px; display: inline-block;">✓ {{ strength }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if sec.gaps %}
+                <div style="margin-top: 8px;">
+                    <strong style="font-size: 12px; color: #d94545;">Gaps / Missing Elements:</strong>
+                    <ul style="margin: 4px 0 8px 18px; font-size: 13px; color: #555;">
+                        {% for gap in sec.gaps %}
+                            <li>{{ gap }}</li>
     <!-- Project Description Quality Analysis -->
     {% if project_analysis %}
     <section class="result-card">
@@ -810,6 +855,13 @@
                 </div>
                 {% endif %}
 
+                {% if sec.suggestions %}
+                <div style="margin-top: 8px; border-top: 1px dashed #e4dcff; padding-top: 8px;">
+                    <strong style="font-size: 12px; color: #7054d9;">Recommendations for {{ sec.name }}:</strong>
+                    {% for tip in sec.suggestions %}
+                        <div class="suggestion" style="margin: 6px 0; padding: 10px; font-size: 13px;">
+                            ✦ {{ tip }}
+                        </div>
                 {% if proj.wording_suggestions %}
                 <div style="margin-top: 12px; border-top: 1px dashed #e2deee; padding-top: 10px;">
                     <strong style="font-size: 13px; color: #7054d9;">Sample Wording Suggestions (Use with your own details):</strong>
@@ -822,6 +874,14 @@
                 {% endif %}
             </div>
             {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if section_quality.summary.key_takeaways %}
+        <h3 class="ats-subheading">Key Section Observations</h3>
+        {% for takeaway in section_quality.summary.key_takeaways %}
+            <div class="suggestion">
+                ✦ {{ takeaway }}
         {% endif %}
 
         {% if project_analysis.general_suggestions %}
