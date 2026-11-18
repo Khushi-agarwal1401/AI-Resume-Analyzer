@@ -28,6 +28,7 @@ from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report, build_txt_report
 from analyzer.report_generator import build_report
 from analyzer.action_verb_analyzer import analyze_action_verbs
+from analyzer.readability_analyzer import analyze_readability
 from analyzer.timeline_checker import check_timeline_consistency
 from analyzer.credentials_detector import detect_certifications, detect_achievements
 from analyzer.validator import (
@@ -176,6 +177,8 @@ def analyze():
 
         # Action Verb Analysis (Issue #54)
         action_verb_analysis = analyze_action_verbs(
+        # Readability Analysis (Issue #55)
+        readability_analysis = analyze_readability(resume_text)
         # Timeline & Date Consistency Analysis (Issue #53)
         timeline_analysis = check_timeline_consistency(
             resume_text,
@@ -216,6 +219,7 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "action_verbs": action_verb_analysis,
+            "readability": readability_analysis,
             "timeline": timeline_analysis,
             "certifications": certifications,
             "achievements": achievements,
@@ -234,6 +238,8 @@ def analyze():
         print("ACHIEVEMENTS:", achievements)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
+        print("READABILITY LEVEL:", readability_analysis.get("reading_level"))
+        print("AVG SENTENCE LENGTH:", readability_analysis.get("avg_sentence_length"))
         print("DUPLICATE STATEMENTS DETECTED:", duplicate_analysis.get("total_duplicates_count"))
         print("TARGET ROLE:", skill_gap.get("target_role"))
         print("SKILL GAP MATCH:", f"{skill_gap.get('match_percentage')}% ({skill_gap.get('readiness_level')})")
@@ -278,6 +284,7 @@ def analyze():
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
             action_verb_analysis=action_verb_analysis,
+            readability_analysis=readability_analysis,
             timeline_analysis=timeline_analysis,
             resume_sections=resume_sections,
             certifications=certifications,
