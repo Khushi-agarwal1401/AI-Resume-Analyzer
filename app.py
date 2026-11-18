@@ -25,8 +25,10 @@ from analyzer.suggestions import generate_recommendations
 from analyzer.keyword_analyzer import analyze_keywords
 from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
+from analyzer.report_generator import build_report, build_txt_report
 from analyzer.report_generator import build_report
 from analyzer.action_verb_analyzer import analyze_action_verbs
+from analyzer.credentials_detector import detect_certifications, detect_achievements
 from analyzer.validator import (
     ALLOWED_EXTENSIONS,
     MAX_JOB_DESCRIPTION_LENGTH,
@@ -128,6 +130,16 @@ def analyze():
         # Detect and organize sections
         resume_sections = extract_sections(resume_text)
 
+        # Detect Certifications and Achievements (Issue #56)
+        certifications = detect_certifications(
+            resume_text,
+            resume_sections=resume_sections
+        )
+        achievements = detect_achievements(
+            resume_text,
+            resume_sections=resume_sections
+        )
+
         # Detect Skills
         found_skills = extract_skills(resume_text)
 
@@ -175,6 +187,7 @@ def analyze():
             resume_sections=resume_sections
         )
 
+        # Results for the report (sent back by Download buttons)
         # Semantic and Exact Duplicate Content Detection
         duplicate_analysis = detect_duplicates(resume_text)
         # Personalized Skill Gap Analysis against selected or best-matching career role
@@ -200,6 +213,9 @@ def analyze():
             "skills": found_skills,
             "suggestions": suggestions,
             "action_verbs": action_verb_analysis,
+            "certifications": certifications,
+            "achievements": achievements,
+            "recommendations": recommendations,
             "job_match": job_match,
             "duplicate_analysis": duplicate_analysis,
             "skill_gap": skill_gap,
@@ -209,6 +225,8 @@ def analyze():
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
         print("ACTION VERBS COUNT:", action_verb_analysis.get("total_action_verbs"))
+        print("CERTIFICATIONS:", certifications)
+        print("ACHIEVEMENTS:", achievements)
         print("RESUME SCORE:", resume_score)
         print("SCORE BREAKDOWN:", score_breakdown)
         print("DUPLICATE STATEMENTS DETECTED:", duplicate_analysis.get("total_duplicates_count"))
@@ -256,6 +274,8 @@ def analyze():
             ats_result=ats_result,
             action_verb_analysis=action_verb_analysis,
             resume_sections=resume_sections,
+            certifications=certifications,
+            achievements=achievements,
             job_match=job_match,
             duplicate_analysis=duplicate_analysis,
             skill_gap=skill_gap,
@@ -340,6 +360,24 @@ def download_report():
         mimetype="application/pdf",
         as_attachment=True,
         download_name="resume-analysis-report.pdf"
+    )
+
+
+@app.route("/download-txt-report", methods=["POST"])
+def download_txt_report():
+
+    try:
+        report_data = json.loads(request.form["report"])
+        txt_content = build_txt_report(report_data)
+    except Exception as error:
+        print("TXT Report Error:", error)
+        return "Unable to create the report. Please analyze your resume again.", 400
+
+    return send_file(
+        io.BytesIO(txt_content.encode("utf-8")),
+        mimetype="text/plain; charset=utf-8",
+        as_attachment=True,
+        download_name="resume-analysis-report.txt"
     )
 
 

@@ -212,6 +212,54 @@
     </section>
 
 
+    <!-- Certifications and Achievements (Issue #56) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px;">
+
+        <!-- Certifications -->
+        <section class="result-card" style="margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border, #eeeef5); padding-bottom: 8px;">
+                <h2 style="margin: 0; font-size: 18px;">Certifications</h2>
+                <span class="tag" style="font-size: 11px;">{{ certifications|length }} detected</span>
+            </div>
+            {% if certifications %}
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                {% for cert in certifications %}
+                <li style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; background: var(--surface-soft, #faf9fe); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border, #eeeef5);">
+                    <span style="color: var(--accent, #7054d9); font-size: 16px;">📜</span>
+                    <span style="line-height: 1.4;">{{ cert }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color: var(--muted, #8b87a5); font-size: 13px; margin: 0; font-style: italic;">
+                No certifications detected in your resume. Consider adding relevant professional credentials.
+            </p>
+            {% endif %}
+        </section>
+
+        <!-- Achievements -->
+        <section class="result-card" style="margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border, #eeeef5); padding-bottom: 8px;">
+                <h2 style="margin: 0; font-size: 18px;">Achievements & Awards</h2>
+                <span class="tag" style="font-size: 11px;">{{ achievements|length }} detected</span>
+            </div>
+            {% if achievements %}
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                {% for ach in achievements %}
+                <li style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; background: var(--surface-soft, #faf9fe); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border, #eeeef5);">
+                    <span style="color: #f59e0b; font-size: 16px;">🏆</span>
+                    <span style="line-height: 1.4;">{{ ach }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color: var(--muted, #8b87a5); font-size: 13px; margin: 0; font-style: italic;">
+                No specific achievements detected in your resume. Highlighting key accomplishments, awards, or recognitions can make your profile stand out.
+            </p>
+            {% endif %}
+        </section>
+
+    </div>
     <!-- Personalized Skill Gap Analysis -->
     {% if skill_gap %}
     <section class="result-card">
@@ -1072,6 +1120,11 @@
         <form action="/download-report" method="post">
             <input type="hidden" name="report" value="{{ report_json }}">
             <button type="submit" class="hero-btn">⬇ Download PDF Report</button>
+        </form>
+
+        <form action="/download-txt-report" method="post">
+            <input type="hidden" name="report" value="{{ report_json }}">
+            <button type="submit" class="hero-btn">⬇ Export as TXT</button>
         </form>
     </div>
 
