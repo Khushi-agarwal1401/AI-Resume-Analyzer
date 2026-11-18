@@ -27,6 +27,7 @@ from analyzer.ats_checker import analyze_ats
 from analyzer.job_matcher import match_resume_to_job
 from analyzer.report_generator import build_report, build_txt_report
 from analyzer.report_generator import build_report
+from analyzer.timeline_checker import check_timeline_consistency
 from analyzer.credentials_detector import detect_certifications, detect_achievements
 from analyzer.validator import (
     ALLOWED_EXTENSIONS,
@@ -172,6 +173,12 @@ def analyze():
         # ATS Compatibility Analysis
         ats_result = analyze_ats(resume_text, found_skills)
 
+        # Timeline & Date Consistency Analysis (Issue #53)
+        timeline_analysis = check_timeline_consistency(
+            resume_text,
+            resume_sections=resume_sections
+        )
+
         # Job Description Matching
         job_match = match_resume_to_job(
             found_skills,
@@ -205,6 +212,7 @@ def analyze():
             "breakdown": score_breakdown,
             "skills": found_skills,
             "suggestions": suggestions,
+            "timeline": timeline_analysis,
             "certifications": certifications,
             "achievements": achievements,
             "recommendations": recommendations,
@@ -216,6 +224,7 @@ def analyze():
 
         print("\n========== RESUME ANALYSIS ==========")
         print("DETECTED SKILLS:", found_skills)
+        print("TIMELINE STATUS:", timeline_analysis.get("timeline_status"))
         print("CERTIFICATIONS:", certifications)
         print("ACHIEVEMENTS:", achievements)
         print("RESUME SCORE:", resume_score)
@@ -263,6 +272,7 @@ def analyze():
             recommendations=recommendations,
             keyword_analysis=keyword_analysis,
             ats_result=ats_result,
+            timeline_analysis=timeline_analysis,
             resume_sections=resume_sections,
             certifications=certifications,
             achievements=achievements,
