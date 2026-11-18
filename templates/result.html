@@ -818,6 +818,62 @@
         {% for takeaway in section_quality.summary.key_takeaways %}
             <div class="suggestion">
                 ✦ {{ takeaway }}
+    <!-- Resume Readability Analysis (Issue #55) -->
+    {% if readability_analysis %}
+    <section class="result-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h2>Resume Readability Analysis</h2>
+            <span class="tag" style="font-size: 12px; font-weight: 600;">
+                {{ readability_analysis.reading_level }}
+            </span>
+        </div>
+
+        <p class="ats-note" style="margin-bottom: 20px;">
+            Evaluates sentence length, linguistic complexity, and ease of scanning to ensure recruiters and hiring managers can quickly digest your qualifications.
+        </p>
+
+        <!-- Readability Metrics Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 22px;">
+            <div style="background: var(--surface-soft, #faf9fe); border: 1px solid var(--border, #eeeef5); border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--muted, #7c7797); font-weight: 600; margin-bottom: 4px;">Avg Sentence Length</div>
+                <div style="font-size: 22px; font-weight: 700; color: var(--accent, #7054d9);">{{ readability_analysis.avg_sentence_length }} <span style="font-size: 13px; font-weight: normal; color: var(--text-soft, #555);">words</span></div>
+                <div style="font-size: 11px; color: var(--muted, #888); margin-top: 2px;">Target: 12–18 words</div>
+            </div>
+
+            <div style="background: var(--surface-soft, #faf9fe); border: 1px solid var(--border, #eeeef5); border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--muted, #7c7797); font-weight: 600; margin-bottom: 4px;">Total Sentences</div>
+                <div style="font-size: 22px; font-weight: 700; color: var(--text, #302b4c);">{{ readability_analysis.sentence_count }}</div>
+                <div style="font-size: 11px; color: var(--muted, #888); margin-top: 2px;">Across {{ readability_analysis.word_count }} words</div>
+            </div>
+
+            <div style="background: var(--surface-soft, #faf9fe); border: 1px solid var(--border, #eeeef5); border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--muted, #7c7797); font-weight: 600; margin-bottom: 4px;">Complex Word Usage</div>
+                <div style="font-size: 22px; font-weight: 700; color: {% if readability_analysis.complex_word_percentage > 25 %}#d94545{% else %}#10b981{% endif %};">{{ readability_analysis.complex_word_percentage }}%</div>
+                <div style="font-size: 11px; color: var(--muted, #888); margin-top: 2px;">3+ syllable words</div>
+            </div>
+
+            <div style="background: var(--surface-soft, #faf9fe); border: 1px solid var(--border, #eeeef5); border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--muted, #7c7797); font-weight: 600; margin-bottom: 4px;">Long Sentences</div>
+                <div style="font-size: 22px; font-weight: 700; color: {% if readability_analysis.long_sentence_count > 0 %}#f59e0b{% else %}#10b981{% endif %};">{{ readability_analysis.long_sentence_count }}</div>
+                <div style="font-size: 11px; color: var(--muted, #888); margin-top: 2px;">Over 25 words</div>
+            </div>
+        </div>
+
+        <!-- Unusually Long Sentences -->
+        {% if readability_analysis.long_sentences %}
+        <h3 class="ats-subheading" style="color: #b45309;">⚠ Unusually Long Sentences (Needs Tightening)</h3>
+        <p class="ats-note" style="margin-bottom: 12px;">
+            These sentences may be hard for recruiters to scan quickly. Consider breaking them into shorter, punchy bullet points:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px;">
+            {% for item in readability_analysis.long_sentences %}
+            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; padding: 12px 14px; border-radius: 6px; font-size: 13px; line-height: 1.5;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: #92400e;">Sentence {{ loop.index }}</strong>
+                    <span style="font-size: 11px; font-weight: 600; color: #b45309; background: #fef3c7; padding: 2px 8px; border-radius: 4px;">{{ item.word_count }} words</span>
+                </div>
+                <p style="margin: 0; color: #78350f;">"{{ item.sentence }}"</p>
+            </div>
     <!-- Date & Timeline Consistency Analysis -->
     {% if timeline_analysis %}
     <section class="result-card">
@@ -841,6 +897,22 @@
         </div>
         {% endif %}
 
+        <!-- Complex Words Sample -->
+        {% if readability_analysis.complex_words %}
+        <h3 class="ats-subheading">Complex Wording Sample</h3>
+        <p class="ats-note" style="margin-bottom: 10px;">
+            Technical terms and polysyllabic words identified in your resume:
+        </p>
+        <div class="skill-list" style="margin-bottom: 22px;">
+            {% for word in readability_analysis.complex_words %}
+            <span class="skill-tag" style="background: var(--surface-soft, #faf9fe); font-size: 12px;">{{ word }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Readability Recommendations -->
+        <h3 class="ats-subheading">Readability Recommendations</h3>
+        {% for tip in readability_analysis.recommendations %}
         {% if timeline_analysis.inconsistencies %}
         <h3 class="ats-subheading">Observations & Advisory Notes</h3>
         {% for inc in timeline_analysis.inconsistencies %}
