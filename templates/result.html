@@ -1001,6 +1001,11 @@
             <input type="hidden" name="report" value="{{ report_json }}">
             <button type="submit" class="hero-btn">⬇ Download PDF Report</button>
         </form>
+
+        <form action="/download-txt-report" method="post">
+            <input type="hidden" name="report" value="{{ report_json }}">
+            <button type="submit" class="hero-btn">⬇ Export as TXT</button>
+        </form>
     </div>
 
 </div>
